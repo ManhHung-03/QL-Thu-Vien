@@ -1694,6 +1694,18 @@ async function exportToExcel(filename, sheetName, reportTitle, headers, rows) {
         // Ensure grid lines are visible
         worksheet.views = [{ showGridLines: true }];
 
+        // Setup page for A4 landscape printing, fitting width to 1 page
+        worksheet.pageSetup.paperSize = 9; // A4
+        worksheet.pageSetup.orientation = 'landscape';
+        worksheet.pageSetup.fitToPage = true;
+        worksheet.pageSetup.fitToWidth = 1;
+        worksheet.pageSetup.fitToHeight = 0;
+        worksheet.pageSetup.margins = {
+            left: 0.25, right: 0.25,
+            top: 0.5, bottom: 0.5,
+            header: 0.2, footer: 0.2
+        };
+
         // 1. REPORT TITLE ROW (Row 1)
         const titleRow = worksheet.addRow([reportTitle.toUpperCase()]);
         worksheet.mergeCells(1, 1, 1, headers.length);
@@ -1787,9 +1799,9 @@ async function exportToExcel(filename, sheetName, reportTitle, headers, rows) {
                     headerName.includes('trạng thái') ||
                     headerName.includes('tình trạng')
                 ) {
-                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
                 } else {
-                    cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+                    cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1, wrapText: true };
                 }
 
                 // Grid borders (All Borders)
@@ -1814,8 +1826,8 @@ async function exportToExcel(filename, sheetName, reportTitle, headers, rows) {
                     }
                 }
             });
-            // Give columns sufficient padding
-            column.width = Math.max(maxLength + 6, 14);
+            // Give columns sufficient padding, but cap width to allow text wrapping for long texts
+            column.width = Math.min(Math.max(maxLength + 4, 12), 45);
         });
 
         // 7. WRITE BUFFER AND TRIGGER DOWNLOAD
