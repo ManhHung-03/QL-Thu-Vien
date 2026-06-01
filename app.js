@@ -1850,11 +1850,8 @@ function setupExcelExports() {
                 // Tổng số lượng đã nhập = Tồn kho + Đang cho mượn
                 const totalImported = b.quantity + activeLoansCount;
 
-                // Ghi chú: Hiển thị vị trí và tình trạng đặc biệt nếu có
-                let notes = b.location ? `Vị trí: ${b.location}` : 'Chưa phân vị trí';
-                if (b.quantity === 0) {
-                    notes += ' (Hết sách trong kho)';
-                }
+                // Ghi chú: Sử dụng ghi chú của sách hoặc để trống
+                let notes = b.notes || '';
 
                 return [
                     index + 1, // STT
