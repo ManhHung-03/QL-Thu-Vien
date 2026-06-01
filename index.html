@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thư Viện Số - Hệ Thống Quản Lý Thư Viện Hiện Đại</title>
+
+    <!-- CSS Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-wrapper">
+                    <div class="logo-icon">
+                        <i data-lucide="book-open"></i>
+                    </div>
+                    <span class="logo-text">THƯ VIỆN SỐ</span>
+                </div>
+            </div>
+
+            <!-- Active User Profile & Role Quick Changer -->
+            <div class="sidebar-user">
+                <div class="user-profile">
+                    <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=150&auto=format&fit=crop"
+                        class="avatar" alt="Avatar" id="user-avatar">
+                    <div class="user-info">
+                        <span class="user-name" id="user-display-name">Trương Thị Hoa</span>
+                        <span class="user-role-badge role-admin" id="user-role-label">Quản trị viên</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Menu Links -->
+            <ul class="nav-menu">
+                <li class="nav-item active" data-tab="dashboard">
+                    <a href="#dashboard">
+                        <i data-lucide="layout-dashboard"></i>
+                        <span>Tổng quan</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-tab="books">
+                    <a href="#books">
+                        <i data-lucide="book"></i>
+                        <span>Tra cứu & Quản lý sách</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-tab="checkouts">
+                    <a href="#checkouts">
+                        <i data-lucide="arrow-left-right"></i>
+                        <span>Mượn & Trả sách</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-tab="distributions">
+                    <a href="#distributions">
+                        <i data-lucide="send"></i>
+                        <span>Cấp phát sách</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-tab="categories">
+                    <a href="#categories">
+                        <i data-lucide="tags"></i>
+                        <span>Quản lý Danh mục</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <button class="btn-logout" id="logout-button">
+                    <i data-lucide="log-out"></i>
+                    <span>Đăng xuất</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Area -->
+        <div class="main-wrapper">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-title-section">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <button class="sidebar-trigger" id="sidebar-toggle-btn">
+                            <i data-lucide="menu"></i>
+                        </button>
+                        <h2 id="current-tab-title">Tổng quan báo cáo</h2>
+                    </div>
+                </div>
+
+                <div class="header-actions">
+                    <!-- Theme Toggle -->
+                    <button class="theme-toggle" id="theme-toggle-btn" title="Chuyển chế độ Sáng / Tối">
+                        <i data-lucide="moon" id="theme-icon"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Page Contents Area -->
+            <main>
+                <!-- 1. DASHBOARD PAGE -->
+                <div class="page-content active" id="tab-dashboard">
+                    <div class="dashboard-grid">
+                        <!-- Stats Row -->
+                        <div class="stats-row" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                            <div class="stat-card">
+                                <div class="stat-info">
+                                    <span class="stat-title">Tổng sách đã nhập</span>
+                                    <span class="stat-value" id="stat-total-imported">0</span>
+                                </div>
+                                <div class="stat-icon bg-indigo">
+                                    <i data-lucide="book-open"></i>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-info">
+                                    <span class="stat-title">Tồn kho</span>
+                                    <span class="stat-value" id="stat-total-stock">0</span>
+                                </div>
+                                <div class="stat-icon bg-success"
+                                    style="background-color: rgba(16, 185, 129, 0.15); color: #10b981;">
+                                    <i data-lucide="database"></i>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-info">
+                                    <span class="stat-title">Đang cho mượn</span>
+                                    <span class="stat-value" id="stat-total-borrowed">0</span>
+                                </div>
+                                <div class="stat-icon bg-purple">
+                                    <i data-lucide="arrow-left-right"></i>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-info">
+                                    <span class="stat-title">Đã cấp</span>
+                                    <span class="stat-value" id="stat-total-distributed">0</span>
+                                </div>
+                                <div class="stat-icon bg-amber"
+                                    style="background-color: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+                                    <i data-lucide="send"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Charts and Lists Row -->
+                        <div class="chart-list-row">
+                            <!-- Bar/Pie Chart -->
+                            <div class="dashboard-card">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i data-lucide="bar-chart-2" style="color: var(--primary);"></i>
+                                        Phân Loại Sách Theo Thể Loại
+                                    </h3>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="booksGenreChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Highlights list -->
+                            <div class="dashboard-card">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i data-lucide="trending-up" style="color: var(--secondary);"></i>
+                                        Thống Kê Sách Mượn Nhiều Nhất
+                                    </h3>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 20px;">
+                                    <div>
+                                        <h4 class="form-label" style="margin-bottom: 8px;">Sách Mượn Nhiều Nhất</h4>
+                                        <ul class="dashboard-list" id="top-borrowed-books-list">
+                                            <!-- Dynamically injected -->
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. BOOKS PAGE -->
+                <div class="page-content" id="tab-books">
+                    <div class="action-bar">
+                        <div class="search-box-wrapper">
+                            <i data-lucide="search" class="search-icon-inside"></i>
+                            <input type="text" class="search-input" id="books-search-query"
+                                placeholder="Tìm theo tên sách, tác giả, ISBN...">
+                        </div>
+
+                        <div class="filters-wrapper">
+                            <select class="select-filter" id="filter-genre">
+                                <option value="">Tất cả Thể loại</option>
+                            </select>
+
+                            <select class="select-filter" id="filter-status">
+                                <option value="">Tất cả Trạng thái</option>
+                                <option value="Còn sách">Còn sách</option>
+                                <option value="Hết sách">Hết sách</option>
+                                <option value="Đang được mượn">Đang được mượn</option>
+                            </select>
+
+                            <button class="btn-secondary" id="btn-export-books-excel">
+                                <i data-lucide="download"></i>
+                                Xuất Excel sách
+                            </button>
+
+                            <button class="btn-primary" id="btn-open-add-book" data-roles="admin,librarian">
+                                <i data-lucide="plus"></i>
+                                Thêm sách mới
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Books Grid Area -->
+                    <div class="books-grid" id="books-list-container">
+                        <!-- Injected by Javascript -->
+                    </div>
+                </div>
+
+
+
+                <!-- 4. CHECKOUTS PAGE -->
+                <div class="page-content" id="tab-checkouts">
+                    <div class="split-layout">
+                        <!-- Create checkout form -->
+                        <div class="dashboard-card">
+                            <div class="card-header" style="margin-bottom: 24px;">
+                                <h3 class="card-title">
+                                    <i data-lucide="arrow-left-right" style="color: var(--primary);"></i>
+                                    Tạo Phiếu Mượn Sách Mới
+                                </h3>
+                            </div>
+
+                            <form id="checkout-form">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label class="form-label" for="checkout-reader-name">Họ và tên độc giả <span
+                                                style="color:var(--danger)">*</span></label>
+                                        <input type="text" class="form-input" id="checkout-reader-name" required
+                                            placeholder="Nhập tên người mượn">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="checkout-reader-department">Phòng ban <span
+                                                style="color:var(--danger)">*</span></label>
+                                        <select class="form-select" id="checkout-reader-department" required>
+                                            <option value="">-- Chọn phòng ban --</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="checkout-book-id">Chọn sách mượn <span
+                                                style="color:var(--danger)">*</span></label>
+                                        <select class="form-select" id="checkout-book-id" required>
+                                            <option value="">-- Chọn sách còn trong kho --</option>
+                                            <!-- Injected by JavaScript -->
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="checkout-date">Ngày mượn</label>
+                                        <input type="date" class="form-input" id="checkout-date" required>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="checkout-quantity">Số lượng mượn <span
+                                                style="color:var(--danger)">*</span></label>
+                                        <input type="number" class="form-input" id="checkout-quantity" min="1" max="10"
+                                            value="1" required>
+                                    </div>
+
+                                    <div class="form-group full-width">
+                                        <label class="form-label" for="checkout-notes">Ghi chú phiếu mượn</label>
+                                        <textarea class="form-textarea" id="checkout-notes"
+                                            placeholder="VD: Sách hơi cũ, mượn làm tiểu luận..."></textarea>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <button type="submit" class="btn-primary">Xác nhận cho mượn</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Side info panels: Quick inventory / checkout check -->
+                        <div style="display:flex; flex-direction:column; gap:20px;">
+                            <div class="dashboard-card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Số sách đang mượn</h3>
+                                </div>
+                                <div style="text-align:center; padding: 20px 0;">
+                                    <span style="font-size: 3rem; font-weight:800; color:var(--primary);"
+                                        id="checkout-active-count">0</span>
+                                    <p style="font-size:0.85rem; color:var(--text-muted);">Phiếu mượn chưa được hoàn trả
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table Listing of current borrowing tickets -->
+                    <div class="card-header"
+                        style="margin:32px 0 16px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                        <h3 class="card-title">Danh Sách Phiếu Mượn Hiện Hành</h3>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <button class="btn-secondary" id="btn-export-active-checkouts">
+                                <i data-lucide="download"></i>
+                                Xuất Excel Sách Đang Mượn
+                            </button>
+                            <button class="btn-secondary" id="btn-export-returned-checkouts">
+                                <i data-lucide="download"></i>
+                                Xuất Excel Sách Đã Trả
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table" id="checkouts-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã phiếu</th>
+                                    <th>Độc giả</th>
+                                    <th>Cuốn sách</th>
+                                    <th>Số lượng</th>
+                                    <th>Ngày mượn</th>
+                                    <th>Số ngày mượn</th>
+                                    <th>Trạng thái</th>
+                                    <th>Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="checkouts-table-body">
+                                <!-- Injected by Javascript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- DISTRIBUTIONS PAGE -->
+                <div class="page-content" id="tab-distributions">
+                    <div class="split-layout">
+                        <!-- Create distribution form -->
+                        <div class="dashboard-card">
+                            <div class="card-header" style="margin-bottom: 24px;">
+                                <h3 class="card-title">
+                                    <i data-lucide="send" style="color: var(--primary);"></i>
+                                    Tạo Lệnh Cấp Sách Mới
+                                </h3>
+                            </div>
+
+                            <form id="distribution-form">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label class="form-label" for="dist-receiver-name">Tên người nhận <span
+                                                style="color:var(--danger)">*</span></label>
+                                        <input type="text" class="form-input" id="dist-receiver-name" required
+                                            placeholder="Nhập tên người nhận">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="dist-receiver-department">Phòng ban <span
+                                                style="color:var(--danger)">*</span></label>
+                                        <select class="form-select" id="dist-receiver-department" required>
+                                            <option value="">-- Chọn phòng ban --</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="dist-book-id">Chọn sách <span
+                                                style="color:var(--danger)">*</span></label>
+                                        <select class="form-select" id="dist-book-id" required>
+                                            <option value="">-- Chọn sách còn trong kho --</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="dist-quantity">Số lượng cấp <span
+                                                style="color:var(--danger)">*</span></label>
+                                        <input type="number" class="form-input" id="dist-quantity" min="1" value="1"
+                                            required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="dist-date">Ngày nhận</label>
+                                        <input type="date" class="form-input" id="dist-date" required>
+                                    </div>
+                                    <div class="form-group full-width">
+                                        <label class="form-label" for="dist-notes">Ghi chú</label>
+                                        <input type="text" class="form-input" id="dist-notes"
+                                            placeholder="Mục đích cấp phát...">
+                                    </div>
+                                </div>
+
+                                <div style="display:flex; justify-content:flex-end; margin-top:20px;">
+                                    <button type="submit" class="btn-primary">Xác nhận cấp sách</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="card-header" style="margin:32px 0 16px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                        <h3 class="card-title">Lịch Sử Cấp Phát Sách</h3>
+                        <button class="btn-secondary" id="btn-export-distributions-excel">
+                            <i data-lucide="download"></i>
+                            Xuất Excel Lịch Sử Cấp Phát
+                        </button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã lệnh</th>
+                                    <th>Sách cấp</th>
+                                    <th>Số lượng</th>
+                                    <th>Người nhận</th>
+                                    <th>Phòng ban</th>
+                                    <th>Ngày nhận</th>
+                                    <th>Ghi chú</th>
+                                </tr>
+                            </thead>
+                            <tbody id="distributions-table-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+
+
+                <!-- 9. CATEGORIES PAGE -->
+                <div class="page-content" id="tab-categories">
+                    <div class="split-layout">
+                        <!-- Genre Management Card -->
+                        <div class="dashboard-card">
+                            <div class="card-header" style="margin-bottom: 20px;">
+                                <h3 class="card-title">
+                                    <i data-lucide="tags" style="color: var(--primary);"></i>
+                                    Quản Lý Thể Loại Sách
+                                </h3>
+                            </div>
+
+                            <!-- Add Genre Form -->
+                            <form id="add-genre-form"
+                                style="margin-bottom: 24px; display: flex; gap: 12px; align-items: flex-end;">
+                                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                    <label class="form-label" for="new-genre-name">Tên thể loại mới <span
+                                            style="color:var(--danger)">*</span></label>
+                                    <input type="text" class="form-input" id="new-genre-name"
+                                        placeholder="VD: Triết học, Ngoại ngữ..." required>
+                                </div>
+                                <button type="submit" class="btn-primary" style="height: 42px;">
+                                    <i data-lucide="plus"></i> Thêm
+                                </button>
+                            </form>
+
+                            <div class="table-wrapper">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 80px;">STT</th>
+                                            <th>Tên thể loại</th>
+                                            <th style="width: 120px; text-align: center;">Hành động</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="genres-table-body">
+                                        <!-- Injected by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Department Management Card -->
+                        <div class="dashboard-card">
+                            <div class="card-header" style="margin-bottom: 20px;">
+                                <h3 class="card-title">
+                                    <i data-lucide="building-2" style="color: var(--secondary);"></i>
+                                    Quản Lý Phòng Ban
+                                </h3>
+                            </div>
+
+                            <!-- Add Department Form -->
+                            <form id="add-department-form"
+                                style="margin-bottom: 24px; display: flex; gap: 12px; align-items: flex-end;">
+                                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                    <label class="form-label" for="new-dept-name">Tên phòng ban mới <span
+                                            style="color:var(--danger)">*</span></label>
+                                    <input type="text" class="form-input" id="new-dept-name"
+                                        placeholder="VD: Phòng Nhân sự, Ban Đào tạo..." required>
+                                </div>
+                                <button type="submit" class="btn-primary" style="height: 42px;">
+                                    <i data-lucide="plus"></i> Thêm
+                                </button>
+                            </form>
+
+                            <div class="table-wrapper">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 80px;">STT</th>
+                                            <th>Tên phòng ban</th>
+                                            <th style="width: 120px; text-align: center;">Hành động</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="departments-table-body">
+                                        <!-- Injected by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+            </main>
+        </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- MODALS SECTION -->
+    <!-- ============================================== -->
+
+    <!-- 1. ADD / EDIT BOOK MODAL -->
+    <div class="modal-overlay" id="modal-book">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title" id="book-modal-title">Thêm sách mới</h3>
+                <button class="modal-close" data-close-modal="modal-book">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="book-form">
+                <div class="modal-body">
+                    <input type="hidden" id="form-book-id">
+
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label class="form-label" for="book-input-title">Tên sách <span
+                                    style="color:var(--danger)">*</span></label>
+                            <input type="text" class="form-input" id="book-input-title" required
+                                placeholder="Nhập tên sách">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="book-input-genre">Thể loại <span
+                                    style="color:var(--danger)">*</span></label>
+                            <select class="form-select" id="book-input-genre" required>
+                                <option value="">-- Chọn thể loại --</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="book-input-import-date">Ngày nhập sách <span
+                                    style="color:var(--danger)">*</span></label>
+                            <input type="date" class="form-input" id="book-input-import-date" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="book-input-quantity">Số lượng nhập <span
+                                    style="color:var(--danger)">*</span></label>
+                            <input type="number" class="form-input" id="book-input-quantity" min="1" required
+                                placeholder="Nhập số lượng sách">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="book-input-notes">Ghi chú</label>
+                            <input type="text" class="form-input" id="book-input-notes"
+                                placeholder="VD: Sách mới, tài liệu nghiên cứu...">
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label class="form-label">Ảnh bìa sách (Tùy chọn upload)</label>
+                            <div class="cover-upload-zone" id="cover-upload-zone">
+                                <i data-lucide="image" style="width: 32px; height: 32px; color: var(--text-muted)"></i>
+                                <span>Nhấp vào để chọn ảnh tải lên (Base64)</span>
+                                <input type="file" id="book-input-cover-file" accept="image/*" style="display:none">
+                                <img src="" id="book-cover-upload-preview" class="cover-preview">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" data-close-modal="modal-book">Hủy</button>
+                    <button type="submit" class="btn-primary">Lưu thông tin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. BOOK DETAILS MODAL (Read-only Detail view) -->
+    <div class="modal-overlay" id="modal-book-detail">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Thông Tin Chi Tiết Sách</h3>
+                <button class="modal-close" data-close-modal="modal-book-detail">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="book-detail-grid">
+                    <div>
+                        <img src="" id="detail-book-cover" class="detail-cover" alt="Cover">
+                        <div style="margin-top:16px;" id="detail-book-badge-container">
+                            <!-- Injected badge status -->
+                        </div>
+                    </div>
+
+                    <div class="detail-info">
+                        <h2 class="detail-title" id="detail-book-title">Tên sách</h2>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Thể loại</span>
+                            <span class="detail-value" id="detail-book-genre">...</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Ngày nhập sách</span>
+                            <span class="detail-value" id="detail-book-import-date">...</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Số lượng tồn kho</span>
+                            <span class="detail-value" id="detail-book-qty">0 cuốn</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Ghi chú</span>
+                            <span class="detail-value" id="detail-book-notes">...</span>
+                        </div>
+
+                        <div class="detail-row" style="border-bottom:none;">
+                            <span class="detail-label">Lịch sử mượn</span>
+                            <span class="detail-value" id="detail-book-borrowed-count">Đã mượn 0 lần</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" data-close-modal="modal-book-detail">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- 5. CONFIRM RETURN MODAL -->
+    <div class="modal-overlay" id="modal-return">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Xác Nhận Trả Sách</h3>
+                <button class="modal-close" data-close-modal="modal-return">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="return-submit-form">
+                <div class="modal-body">
+                    <input type="hidden" id="return-form-checkout-id">
+
+                    <div
+                        style="background-color: var(--bg-tertiary); padding:16px; border-radius:var(--radius-md); margin-bottom:20px; display:flex; flex-direction:column; gap:8px;">
+                        <div style="display:flex; justify-content:space-between;"><span class="detail-label">Độc giả
+                                mượn:</span> <span class="detail-value" id="return-info-reader">...</span></div>
+                        <div style="display:flex; justify-content:space-between;"><span class="detail-label">Sách
+                                mượn:</span> <span class="detail-value" id="return-info-book">...</span></div>
+                        <div style="display:flex; justify-content:space-between;"><span class="detail-label">Ngày
+                                mượn:</span> <span class="detail-value" id="return-info-borrow-date">...</span></div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="return-quantity">Số lượng trả <span
+                                    style="color:var(--danger)">*</span></label>
+                            <input type="number" class="form-input" id="return-quantity" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="return-reader-name">Tên người trả <span
+                                    style="color:var(--danger)">*</span></label>
+                            <input type="text" class="form-input" id="return-reader-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="return-reader-department">Phòng ban người trả</label>
+                            <select class="form-select" id="return-reader-department">
+                                <option value="">-- Chọn phòng ban --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="return-date-input">Ngày trả thực tế <span
+                                    style="color:var(--danger)">*</span></label>
+                            <input type="date" class="form-input" id="return-date-input" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="return-status-input">Tình trạng sách khi trả</label>
+                            <select class="form-select" id="return-status-input">
+                                <option value="Bình thường" selected>Bình thường (Nguyên vẹn)</option>
+                                <option value="Hư hỏng nhẹ">Hư hỏng nhẹ</option>
+                                <option value="Hư hỏng nặng">Hư hỏng nặng / Rách nát</option>
+                                <option value="Mất sách">Mất sách</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label class="form-label" for="return-notes">Ghi chú lúc trả sách</label>
+                            <textarea class="form-textarea" id="return-notes"
+                                placeholder="Mô tả cụ thể nếu có hư hỏng, rách bìa..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" data-close-modal="modal-return">Hủy</button>
+                    <button type="submit" class="btn-primary">Xác nhận trả & Đóng phiếu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+
+    
+
+    <!-- Toast Message Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- ============================================== -->
+    <!-- JAVASCRIPT LIBRARIES & LOGIC -->
+    <!-- ============================================== -->
+    <!-- Lucide Icons for high-quality SVG icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js for dashboard charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- ExcelJS for beautiful styled excel exports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+
+    <!-- Application Business Logic -->
+    <script src="app.js"></script>
+</body>
+
+</html>
