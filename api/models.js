@@ -4,6 +4,7 @@ const bookSchema = new mongoose.Schema({
     id: { type: String, required: true, unique: true },
     title: { type: String, required: true },
     genre: { type: String, required: true },
+    source: { type: String }, // Add source to schema
     importDate: { type: String },
     quantity: { type: Number, default: 0 },
     notes: { type: String },
