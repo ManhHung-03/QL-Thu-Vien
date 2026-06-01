@@ -272,9 +272,11 @@ app.post('/api/reset', async (req, res) => {
     }
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
-});
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    const port = process.env.PORT || 3000;
+    app.listen(port, () => {
+        console.log(`Server listening on port ${port}`);
+    });
+}
 
 module.exports = app;
