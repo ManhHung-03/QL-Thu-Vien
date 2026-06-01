@@ -65,14 +65,14 @@ async function initDB(force = false) {
     try {
         const response = await fetch(`${API_BASE_URL}/data`);
         if (!response.ok) throw new Error('API connection failed');
-        
+
         const data = await response.json();
-        
+
         // Check if MongoDB is empty but LocalStorage has data (Migration scenario)
         const hasLocalData = localStorage.getItem('lms_initialized') === 'true';
         if (data.books.length === 0 && hasLocalData && !force) {
             showToast('Đang đồng bộ dữ liệu cũ lên Cloud...', 'warning');
-            
+
             // Read from local storage
             const localBooks = JSON.parse(localStorage.getItem('lms_books')) || [];
             const localCheckouts = JSON.parse(localStorage.getItem('lms_checkouts')) || [];
@@ -82,7 +82,7 @@ async function initDB(force = false) {
             const localDepts = JSON.parse(localStorage.getItem('lms_departments')) || DEFAULT_DEPARTMENTS;
             const localAuditLogs = JSON.parse(localStorage.getItem('lms_audit_logs')) || [];
             const localNotis = JSON.parse(localStorage.getItem('lms_notifications')) || [];
-            
+
             // Push to backend
             await fetch(`${API_BASE_URL}/sync`, {
                 method: 'POST',
@@ -98,10 +98,10 @@ async function initDB(force = false) {
                     departments: localDepts
                 })
             });
-            
+
             showToast('Đồng bộ dữ liệu lên Cloud thành công!', 'success');
             // Re-fetch data after sync
-            return initDB(force); 
+            return initDB(force);
         }
 
         // Apply data from MongoDB to the global db object
@@ -113,7 +113,7 @@ async function initDB(force = false) {
         db.rules = data.rules || DEFAULT_RULES;
         db.genres = data.genres || DEFAULT_GENRES;
         db.departments = data.departments || DEFAULT_DEPARTMENTS;
-        
+
         // Also save to localStorage as a cache/backup
         saveAllDBLocal();
         showToast('Tải dữ liệu từ Cloud thành công!', 'success');
@@ -121,7 +121,7 @@ async function initDB(force = false) {
     } catch (err) {
         console.error('Cannot connect to API, using LocalStorage fallback.', err);
         showToast('Mất kết nối server! Đang dùng dữ liệu ngoại tuyến.', 'error');
-        
+
         // Fallback to local storage
         if (force || !localStorage.getItem('lms_initialized')) {
             localStorage.setItem('lms_books', JSON.stringify(DEFAULT_BOOKS));
@@ -134,7 +134,7 @@ async function initDB(force = false) {
             localStorage.setItem('lms_departments', JSON.stringify(DEFAULT_DEPARTMENTS));
             localStorage.setItem('lms_initialized', 'true');
         }
-        
+
         db.books = JSON.parse(localStorage.getItem('lms_books')) || [];
         db.checkouts = JSON.parse(localStorage.getItem('lms_checkouts')) || [];
         db.distributions = JSON.parse(localStorage.getItem('lms_distributions')) || [];
@@ -144,7 +144,7 @@ async function initDB(force = false) {
         db.genres = JSON.parse(localStorage.getItem('lms_genres')) || DEFAULT_GENRES;
         db.departments = JSON.parse(localStorage.getItem('lms_departments')) || DEFAULT_DEPARTMENTS;
     }
-    
+
     // Trigger initial render updates if already on a specific tab
     if (currentTab === 'dashboard') loadDashboardStats();
     if (currentTab === 'books') renderBooks();
@@ -168,7 +168,7 @@ function saveAllDBLocal() {
 function saveDB(key) {
     // Keep local backup updated
     saveDBLocal(key);
-    
+
     // Optimistic sync to Cloud
     fetch(`${API_BASE_URL}/bulk/${key}`, {
         method: 'POST',
@@ -192,10 +192,10 @@ function generateBookCover(title, author, genre) {
         'Kỹ năng sống': ['#8b5cf6', '#6366f1']
     };
     const color = colors[genre] || ['#64748b', '#334155'];
-    
+
     const cleanTitle = title.replace(/[<>&"]/g, '');
     const cleanAuthor = author.replace(/[<>&"]/g, '');
-    
+
     const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 180" width="120" height="180">
             <defs>
@@ -288,16 +288,16 @@ function switchTab(tabName) {
     // Hide active tabs
     document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    
+
     // Show new tab
     const targetPage = document.getElementById(`tab-${tabName}`);
     const targetNavItem = document.querySelector(`.nav-item[data-tab="${tabName}"]`);
-    
+
     if (targetPage && targetNavItem) {
         targetPage.classList.add('active');
         targetNavItem.classList.add('active');
         currentTab = tabName;
-        
+
         // Update header title
         const titles = {
             'dashboard': 'Tổng quan báo cáo',
@@ -308,7 +308,7 @@ function switchTab(tabName) {
             'system-settings': 'Quản trị quy định & Sao lưu hệ thống'
         };
         document.getElementById('current-tab-title').innerText = titles[tabName] || 'Thư viện số';
-        
+
         // Run tab specific loaders
         if (tabName === 'dashboard') {
             loadDashboardStats();
@@ -324,7 +324,7 @@ function switchTab(tabName) {
         } else if (tabName === 'categories') {
             renderCategories();
         }
-        
+
         // Close responsive sidebar
         document.getElementById('sidebar').classList.remove('open');
     }
@@ -338,7 +338,7 @@ function handleRoleChange(newRole) {
         email: 'admin.hoa@thuvienso.vn',
         avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=150&auto=format&fit=crop'
     };
-    
+
     // Update user profile display in sidebar
     if (document.getElementById('user-avatar')) {
         document.getElementById('user-avatar').src = currentUser.avatar;
@@ -346,15 +346,15 @@ function handleRoleChange(newRole) {
     if (document.getElementById('user-display-name')) {
         document.getElementById('user-display-name').innerText = currentUser.name;
     }
-    
+
     const roleBadge = document.getElementById('user-role-label');
     if (roleBadge) {
         roleBadge.className = 'user-role-badge role-admin';
         roleBadge.innerText = 'Quản trị viên';
     }
-    
+
     switchTab('dashboard');
-    
+
     addAuditLog('Hệ thống', `Chuyển sang chạy thử với vai trò: ${newRole.toUpperCase()} (${currentUser.name})`, 'info');
     showToast(`Đã đổi vai trò: ${newRole === 'admin' ? 'Quản trị viên' : 'Thủ thư'}`, 'info');
 }
@@ -365,26 +365,26 @@ function handleRoleChange(newRole) {
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) return;
-    
+
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    
+
     let iconName = 'info';
     if (type === 'success') iconName = 'check-circle';
     if (type === 'error') iconName = 'alert-octagon';
     if (type === 'warning') iconName = 'alert-triangle';
-    
+
     toast.innerHTML = `
         <div class="toast-icon"><i data-lucide="${iconName}"></i></div>
         <div class="toast-message">${message}</div>
     `;
-    
+
     container.appendChild(toast);
     lucide.createIcons();
-    
+
     // Animation in
     setTimeout(() => toast.classList.add('show'), 50);
-    
+
     // Animation out
     setTimeout(() => {
         toast.classList.remove('show');
@@ -400,15 +400,15 @@ let genreChart = null;
 function loadDashboardStats() {
     // 1. Tồn kho (stockCount): Sum of books quantity
     const stockCount = db.books.reduce((sum, book) => sum + (parseInt(book.quantity) || 0), 0);
-    
+
     // 2. Đang cho mượn (borrowedCount): Sum of remaining borrowing quantity (quantity - returnedQuantity) in active checkouts
     const borrowedCount = db.checkouts
         .filter(c => c.returnDate === null)
         .reduce((sum, c) => sum + ((parseInt(c.quantity) || 0) - (parseInt(c.returnedQuantity) || 0)), 0);
-        
+
     // 3. Đã cấp (distributedCount): Sum of distributed quantity
     const distributedCount = db.distributions.reduce((sum, d) => sum + (parseInt(d.quantity) || 0), 0);
-    
+
     // 4. Tổng sách đã nhập (importedCount)
     const importedCount = stockCount + borrowedCount + distributedCount;
 
@@ -425,10 +425,10 @@ function loadDashboardStats() {
     if (document.getElementById('stat-total-distributed')) {
         document.getElementById('stat-total-distributed').innerText = distributedCount;
     }
-    
+
     // Load Top lists
     renderTopBorrowedBooks();
-    
+
     // Draw chart
     renderGenreDistributionChart();
 }
@@ -436,10 +436,10 @@ function loadDashboardStats() {
 function renderTopBorrowedBooks() {
     const list = document.getElementById('top-borrowed-books-list');
     if (!list) return;
-    
+
     // Sort books by borrowedCount
     const sorted = [...db.books].sort((a, b) => b.borrowedCount - a.borrowedCount).slice(0, 4);
-    
+
     list.innerHTML = sorted.map(b => `
         <li class="list-item">
             <div class="item-left">
@@ -460,25 +460,25 @@ function renderTopBorrowedBooks() {
 function renderGenreDistributionChart() {
     const canvas = document.getElementById('booksGenreChart');
     if (!canvas) return;
-    
+
     // Count books per genre
     const genres = {};
     db.books.forEach(b => {
         genres[b.genre] = (genres[b.genre] || 0) + 1;
     });
-    
+
     const labels = Object.keys(genres);
     const data = Object.values(genres);
-    
+
     // Destroy previous chart to avoid overlay issues
     if (genreChart) {
         genreChart.destroy();
     }
-    
+
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const gridColor = isDark ? '#1e293b' : '#cbd5e1';
     const textColor = isDark ? '#f8fafc' : '#0f172a';
-    
+
     genreChart = new Chart(canvas.getContext('2d'), {
         type: 'bar',
         data: {
@@ -529,21 +529,21 @@ function renderGenreDistributionChart() {
 function renderBooks() {
     const container = document.getElementById('books-list-container');
     if (!container) return;
-    
+
     const searchQuery = document.getElementById('books-search-query').value.toLowerCase().trim();
     const filterGenre = document.getElementById('filter-genre').value;
     const filterStatus = document.getElementById('filter-status').value;
-    
+
     // Filter logic
     const filtered = db.books.filter(b => {
         // 1. Search Query
         const matchSearch = b.title.toLowerCase().includes(searchQuery) ||
-                            (b.notes || '').toLowerCase().includes(searchQuery) ||
-                            b.genre.toLowerCase().includes(searchQuery);
-        
+            (b.notes || '').toLowerCase().includes(searchQuery) ||
+            b.genre.toLowerCase().includes(searchQuery);
+
         // 2. Genre Filter
         const matchGenre = filterGenre === '' || b.genre === filterGenre;
-        
+
         // 3. Status Filter
         let currentStatus = 'Còn sách';
         if (b.quantity === 0) {
@@ -551,10 +551,10 @@ function renderBooks() {
             currentStatus = hasActiveCheckouts ? 'Đang được mượn' : 'Hết sách';
         }
         const matchStatus = filterStatus === '' || currentStatus === filterStatus;
-        
+
         return matchSearch && matchGenre && matchStatus;
     });
-    
+
     if (filtered.length === 0) {
         container.innerHTML = `
             <div style="grid-column: 1/-1; text-align:center; padding: 40px; color: var(--text-muted);">
@@ -565,11 +565,11 @@ function renderBooks() {
         lucide.createIcons();
         return;
     }
-    
+
     container.innerHTML = filtered.map(b => {
         let statusClass = 'status-available';
         let statusLabel = 'Còn sách';
-        
+
         if (b.quantity === 0) {
             const hasActiveCheckouts = db.checkouts.some(c => c.bookId === b.id && c.returnDate === null);
             if (hasActiveCheckouts) {
@@ -580,9 +580,9 @@ function renderBooks() {
                 statusLabel = 'Hết sách';
             }
         }
-        
+
         const coverSrc = b.cover || generateBookCover(b.title, '', b.genre);
-        
+
         // Define action buttons based on Role
         let actionButtons = `
             <button class="book-action-btn" onclick="openBookDetailModal('${b.id}')">
@@ -590,7 +590,7 @@ function renderBooks() {
                 Chi tiết
             </button>
         `;
-        
+
         if (currentRole === 'admin' || currentRole === 'librarian') {
             actionButtons += `
                 <button class="book-action-btn" onclick="openEditBookModal('${b.id}')">
@@ -603,10 +603,10 @@ function renderBooks() {
                 </button>
             `;
         }
-        
+
         const dateText = b.importDate ? `Ngày nhập: ${formatDateVN(b.importDate)}` : 'Ngày nhập: --';
         const noteText = b.notes ? `Ghi chú: ${b.notes}` : 'Ghi chú: Không';
-        
+
         return `
             <div class="book-card" id="book-card-${b.id}">
                 <div class="book-cover-container">
@@ -634,20 +634,20 @@ function renderBooks() {
 function openBookDetailModal(id) {
     const b = db.books.find(book => book.id === id);
     if (!b) return;
-    
+
     document.getElementById('detail-book-title').innerText = b.title;
     document.getElementById('detail-book-genre').innerText = b.genre;
     document.getElementById('detail-book-import-date').innerText = formatDateVN(b.importDate) || '--';
     document.getElementById('detail-book-qty').innerText = `${b.quantity} cuốn`;
     document.getElementById('detail-book-notes').innerText = b.notes || 'Không có';
     document.getElementById('detail-book-borrowed-count').innerText = `Đã được mượn ${b.borrowedCount || 0} lần`;
-    
+
     const coverImg = document.getElementById('detail-book-cover');
     coverImg.src = b.cover || generateBookCover(b.title, '', b.genre);
-    
+
     const badgeContainer = document.getElementById('detail-book-badge-container');
     badgeContainer.className = '';
-    
+
     let statusClass = 'badge-success';
     let statusLabel = 'Còn sách trong kho';
     if (b.quantity === 0) {
@@ -661,7 +661,7 @@ function openBookDetailModal(id) {
         }
     }
     badgeContainer.innerHTML = `<span class="badge ${statusClass}" style="width:100%; justify-content:center; padding:6px;">${statusLabel}</span>`;
-    
+
     openModal('modal-book-detail');
 }
 
@@ -669,7 +669,7 @@ function openBookDetailModal(id) {
 function openEditBookModal(id) {
     const b = db.books.find(book => book.id === id);
     if (!b) return;
-    
+
     document.getElementById('book-modal-title').innerText = 'Chỉnh sửa thông tin sách';
     document.getElementById('form-book-id').value = b.id;
     document.getElementById('book-input-title').value = b.title;
@@ -677,7 +677,7 @@ function openEditBookModal(id) {
     document.getElementById('book-input-import-date').value = b.importDate || getOffsetDate(0);
     document.getElementById('book-input-quantity').value = b.quantity;
     document.getElementById('book-input-notes').value = b.notes || '';
-    
+
     const coverPreview = document.getElementById('book-cover-upload-preview');
     if (b.cover) {
         coverPreview.src = b.cover;
@@ -685,21 +685,21 @@ function openEditBookModal(id) {
     } else {
         coverPreview.style.display = 'none';
     }
-    
+
     openModal('modal-book');
 }
 
 function deleteBook(id) {
     const b = db.books.find(book => book.id === id);
     if (!b) return;
-    
+
     // Check if book is currently checked out
     const hasActiveCheckout = db.checkouts.some(c => c.bookId === id && c.returnDate === null);
     if (hasActiveCheckout) {
         showToast('Không thể xóa! Cuốn sách này hiện đang có phiếu mượn chưa trả.', 'error');
         return;
     }
-    
+
     if (confirm(`Bạn chắc chắn muốn xóa cuốn sách "${b.title}" khỏi hệ thống?`)) {
         db.books = db.books.filter(book => book.id !== id);
         saveDB('books');
@@ -714,11 +714,11 @@ function setupBookCoverUploader() {
     const zone = document.getElementById('cover-upload-zone');
     const fileInput = document.getElementById('book-input-cover-file');
     const preview = document.getElementById('book-cover-upload-preview');
-    
+
     if (!zone || !fileInput || !preview) return;
-    
+
     zone.addEventListener('click', () => fileInput.click());
-    
+
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -736,21 +736,21 @@ function setupBookCoverUploader() {
 function setupBookFormHandler() {
     const form = document.getElementById('book-form');
     if (!form) return;
-    
+
     form.addEventListener('submit', (e) => {
         e.preventDefault();
-        
+
         const bookId = document.getElementById('form-book-id').value;
         const title = document.getElementById('book-input-title').value.trim();
         const genre = document.getElementById('book-input-genre').value;
         const importDate = document.getElementById('book-input-import-date').value;
         const quantity = parseInt(document.getElementById('book-input-quantity').value);
         const notes = document.getElementById('book-input-notes').value.trim();
-        
+
         // Grab cover preview image source if it's base64 uploaded
         const preview = document.getElementById('book-cover-upload-preview');
         const coverData = (preview.style.display === 'block') ? preview.src : null;
-        
+
         if (bookId) {
             // Edit Mode
             const bIndex = db.books.findIndex(b => b.id === bookId);
@@ -761,10 +761,10 @@ function setupBookFormHandler() {
                 db.books[bIndex].quantity = quantity;
                 db.books[bIndex].notes = notes;
                 db.books[bIndex].cover = coverData;
-                
+
                 // update status label
                 db.books[bIndex].status = quantity > 0 ? 'Còn sách' : 'Hết sách';
-                
+
                 saveDB('books');
                 addAuditLog(currentUser.name, `Cập nhật thông tin sách: ${title} (Mã: ${bookId})`, 'success');
                 showToast('Cập nhật sách thành công!', 'success');
@@ -788,7 +788,7 @@ function setupBookFormHandler() {
             addAuditLog(currentUser.name, `Thêm sách mới vào thư viện: ${title} (Mã: ${newId})`, 'success');
             showToast('Thêm sách mới thành công!', 'success');
         }
-        
+
         closeModal('modal-book');
         renderBooks();
     });
@@ -802,13 +802,13 @@ function setupBookFormHandler() {
 function populateCheckoutFormDropdowns() {
     const bookSelect = document.getElementById('checkout-book-id');
     if (!bookSelect) return;
-    
+
     // Set default borrow date to today
     document.getElementById('checkout-date').value = getOffsetDate(0);
-        
+
     // Fill book dropdown (Only in stock)
     const booksInStock = db.books.filter(b => b.quantity > 0);
-    bookSelect.innerHTML = '<option value="">-- Chọn sách còn trong kho --</option>' + 
+    bookSelect.innerHTML = '<option value="">-- Chọn sách còn trong kho --</option>' +
         booksInStock.map(b => `<option value="${b.id}">${b.title} [Số lượng: ${b.quantity} cuốn]</option>`).join('');
 
     populateDepartmentDropdowns();
@@ -817,28 +817,28 @@ function populateCheckoutFormDropdowns() {
 function renderCheckouts() {
     const tbody = document.getElementById('checkouts-table-body');
     if (!tbody) return;
-    
+
     // Check totals
     const activeCheckouts = db.checkouts.filter(c => c.status !== 'Đã trả');
     document.getElementById('checkout-active-count').innerText = activeCheckouts.length;
-    
+
     // Main checkout table
     if (db.checkouts.length === 0) {
         tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:24px;">Không có phiếu mượn nào được ghi nhận.</td></tr>`;
         return;
     }
-    
+
     // Render list (sorted by active/status first, then borrow date descending)
     const sorted = [...db.checkouts].sort((a, b) => {
         if (a.status !== 'Đã trả' && b.status === 'Đã trả') return -1;
         if (a.status === 'Đã trả' && b.status !== 'Đã trả') return 1;
         return new Date(b.borrowDate) - new Date(a.borrowDate);
     });
-    
+
     tbody.innerHTML = sorted.map(c => {
         let badgeClass = 'badge-info';
         if (c.status === 'Đã trả') badgeClass = 'badge-success';
-        
+
         let daysText = '';
         if (c.status === 'Đã trả') {
             const days = Math.ceil((new Date(c.returnDate || new Date()) - new Date(c.borrowDate)) / (1000 * 60 * 60 * 24));
@@ -847,7 +847,7 @@ function renderCheckouts() {
             const days = Math.ceil((new Date() - new Date(c.borrowDate)) / (1000 * 60 * 60 * 24));
             daysText = `${days} ngày (đang giữ)`;
         }
-        
+
         let actionBtnHtml = '';
         if (c.status !== 'Đã trả') {
             actionBtnHtml = `
@@ -858,10 +858,10 @@ function renderCheckouts() {
         } else {
             actionBtnHtml = `<span style="font-size:0.8rem; color:var(--text-muted)">Hoàn thành</span>`;
         }
-        
+
         const deptSuffix = (c.memberDepartment || c.memberPhone) ? ` <span style="font-size:0.75rem; color:var(--text-muted);">(${c.memberDepartment || c.memberPhone})</span>` : '';
         const qtyText = `${c.quantity || 1} (Đã trả ${c.returnedQuantity || 0})`;
-        
+
         return `
             <tr>
                 <td><b>${c.id}</b></td>
@@ -881,36 +881,36 @@ function renderCheckouts() {
 function setupCheckoutFormHandler() {
     const form = document.getElementById('checkout-form');
     if (!form) return;
-    
+
     form.addEventListener('submit', (e) => {
         e.preventDefault();
-        
+
         const memberName = document.getElementById('checkout-reader-name').value.trim();
         const memberDepartment = document.getElementById('checkout-reader-department').value.trim();
         const bookId = document.getElementById('checkout-book-id').value;
         const borrowDate = document.getElementById('checkout-date').value;
         const borrowQuantity = parseInt(document.getElementById('checkout-quantity').value) || 1;
         const notes = document.getElementById('checkout-notes').value.trim();
-        
+
         const book = db.books.find(b => b.id === bookId);
         if (!book) return;
-        
+
         // BUSINESS RULE VALIDATIONS:
         // 1. Max borrow limit per reader name + department
         const activeCheckouts = db.checkouts.filter(c => c.memberName.toLowerCase() === memberName.toLowerCase() && (c.memberDepartment || c.memberPhone || '').toLowerCase() === memberDepartment.toLowerCase() && c.status !== 'Đã trả');
         const currentBorrowedCount = activeCheckouts.reduce((sum, c) => sum + (c.quantity - (c.returnedQuantity || 0)), 0);
-        
+
         if (currentBorrowedCount + borrowQuantity > db.rules.maxBorrow) {
             showToast(`Mượn thất bại! Độc giả đã đạt giới hạn mượn tối đa (${db.rules.maxBorrow} cuốn). Bạn chỉ có thể mượn thêm ${Math.max(0, db.rules.maxBorrow - currentBorrowedCount)} cuốn.`, 'error');
             return;
         }
-        
+
         // 2. Book stock quantity check
         if (book.quantity < borrowQuantity) {
             showToast(`Mượn thất bại! Sách chỉ còn ${book.quantity} cuốn trong kho.`, 'error');
             return;
         }
-        
+
         // Process checkout
         const newCheckoutId = 'PM' + String(Date.now()).substring(7);
         const newCheckout = {
@@ -927,20 +927,20 @@ function setupCheckoutFormHandler() {
             status: 'Đang mượn',
             notes
         };
-        
+
         // Deduct book inventory
         book.quantity -= borrowQuantity;
         if (book.quantity === 0) {
             book.status = 'Đang được mượn';
         }
         book.borrowedCount = (book.borrowedCount || 0) + borrowQuantity;
-        
+
         db.checkouts.push(newCheckout);
         saveAllDB();
-        
+
         addAuditLog(currentUser.name, `Cho độc giả ${memberName} mượn ${borrowQuantity} cuốn sách "${book.title}" (Mã phiếu: ${newCheckoutId})`, 'success');
         showToast('Tạo phiếu mượn sách thành công!', 'success');
-        
+
         // Reset form & reload
         form.reset();
         populateCheckoutFormDropdowns();
@@ -954,15 +954,15 @@ function setupCheckoutFormHandler() {
 function renderReturns() {
     const tbody = document.getElementById('returns-table-body');
     if (!tbody) return;
-    
+
     // Only display active loans
     const activeLoans = db.checkouts.filter(c => c.returnDate === null);
-    
+
     if (activeLoans.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted)">Không có cuốn sách nào đang được mượn.</td></tr>`;
         return;
     }
-    
+
     tbody.innerHTML = activeLoans.map(c => {
         const deptSuffix = (c.memberDepartment || c.memberPhone) ? ` <span style="font-size:0.75rem; color:var(--text-muted);">(${c.memberDepartment || c.memberPhone})</span>` : '';
         return `
@@ -986,43 +986,43 @@ function renderReturns() {
 function openReturnBookModal(checkoutId) {
     const c = db.checkouts.find(loan => loan.id === checkoutId);
     if (!c) return;
-    
+
     document.getElementById('return-form-checkout-id').value = c.id;
-    
+
     const deptSuffix = (c.memberDepartment || c.memberPhone) ? ` (${c.memberDepartment || c.memberPhone})` : '';
     document.getElementById('return-info-reader').innerText = `${c.memberName}${deptSuffix}`;
     document.getElementById('return-info-book').innerText = `${c.bookTitle} (Còn nợ: ${c.quantity - (c.returnedQuantity || 0)})`;
     document.getElementById('return-info-borrow-date').innerText = formatDateVN(c.borrowDate);
-    
+
     // Set max quantity and default inputs
     const qtyInput = document.getElementById('return-quantity');
     qtyInput.max = c.quantity - (c.returnedQuantity || 0);
     qtyInput.value = qtyInput.max; // Default return all remaining
-    
+
     document.getElementById('return-reader-name').value = c.memberName;
-    
+
     populateDepartmentDropdowns();
     document.getElementById('return-reader-department').value = c.memberDepartment || '';
-    
+
     // Set actual return date to today
     const returnDateInput = document.getElementById('return-date-input');
     returnDateInput.value = getOffsetDate(0);
     returnDateInput.max = getOffsetDate(0); // Can't select future date
-    
+
     // Reset inputs
     document.getElementById('return-status-input').value = 'Bình thường';
     document.getElementById('return-notes').value = '';
-    
+
     openModal('modal-return');
 }
 
 function setupReturnSubmitHandler() {
     const form = document.getElementById('return-submit-form');
     if (!form) return;
-    
+
     form.addEventListener('submit', (e) => {
         e.preventDefault();
-        
+
         const checkoutId = document.getElementById('return-form-checkout-id').value;
         const returnDate = document.getElementById('return-date-input').value;
         const bookCondition = document.getElementById('return-status-input').value;
@@ -1030,15 +1030,15 @@ function setupReturnSubmitHandler() {
         const returnerName = document.getElementById('return-reader-name').value.trim();
         const returnerDepartment = document.getElementById('return-reader-department').value.trim();
         const notes = document.getElementById('return-notes').value.trim();
-        
+
         const cIndex = db.checkouts.findIndex(c => c.id === checkoutId);
         if (cIndex === -1) return;
-        
+
         const checkout = db.checkouts[cIndex];
         const book = db.books.find(b => b.id === checkout.bookId);
-        
+
         checkout.returnedQuantity = (checkout.returnedQuantity || 0) + returnQuantity;
-        
+
         // Push return event
         checkout.returnEvents = checkout.returnEvents || [];
         checkout.returnEvents.push({
@@ -1049,12 +1049,12 @@ function setupReturnSubmitHandler() {
             condition: bookCondition,
             notes: notes
         });
-        
+
         if (checkout.returnedQuantity >= checkout.quantity) {
             checkout.status = 'Đã trả';
             checkout.returnDate = returnDate; // mark fully returned date
         }
-        
+
         // Adjust book inventory
         if (book) {
             if (bookCondition !== 'Mất sách') {
@@ -1064,13 +1064,13 @@ function setupReturnSubmitHandler() {
                 book.status = book.quantity > 0 ? 'Còn sách' : 'Hết sách';
             }
         }
-        
+
         saveAllDB();
         addAuditLog(currentUser.name, `Nhận trả ${returnQuantity} cuốn "${checkout.bookTitle}" (Phiếu: ${checkout.id}) từ ${returnerName}. Tình trạng: ${bookCondition}`, 'success');
         showToast('Nhận trả sách thành công!', 'success');
-        
+
         closeModal('modal-return');
-        
+
         // Refresh pages
         if (currentTab === 'checkouts') {
             renderCheckouts();
@@ -1085,11 +1085,11 @@ function setupReturnSubmitHandler() {
 function populateDistributionFormDropdowns() {
     const bookSelect = document.getElementById('dist-book-id');
     if (!bookSelect) return;
-    
+
     document.getElementById('dist-date').value = getOffsetDate(0);
-        
+
     const booksInStock = db.books.filter(b => b.quantity > 0);
-    bookSelect.innerHTML = '<option value="">-- Chọn sách còn trong kho --</option>' + 
+    bookSelect.innerHTML = '<option value="">-- Chọn sách còn trong kho --</option>' +
         booksInStock.map(b => `<option value="${b.id}">${b.title} [Số lượng: ${b.quantity} cuốn]</option>`).join('');
 
     populateDepartmentDropdowns();
@@ -1098,14 +1098,14 @@ function populateDistributionFormDropdowns() {
 function renderDistributions() {
     const tbody = document.getElementById('distributions-table-body');
     if (!tbody) return;
-    
+
     if (db.distributions.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px;">Không có lệnh cấp phát sách nào.</td></tr>`;
         return;
     }
-    
+
     const sorted = [...db.distributions].sort((a, b) => new Date(b.receiveDate) - new Date(a.receiveDate));
-    
+
     tbody.innerHTML = sorted.map(d => `
         <tr>
             <td><b>${d.id}</b></td>
@@ -1122,25 +1122,25 @@ function renderDistributions() {
 function setupDistributionSubmitHandler() {
     const form = document.getElementById('distribution-form');
     if (!form) return;
-    
+
     form.addEventListener('submit', (e) => {
         e.preventDefault();
-        
+
         const receiverName = document.getElementById('dist-receiver-name').value.trim();
         const receiverDepartment = document.getElementById('dist-receiver-department').value.trim();
         const bookId = document.getElementById('dist-book-id').value;
         const distQuantity = parseInt(document.getElementById('dist-quantity').value) || 1;
         const distDate = document.getElementById('dist-date').value;
         const notes = document.getElementById('dist-notes').value.trim();
-        
+
         const book = db.books.find(b => b.id === bookId);
         if (!book) return;
-        
+
         if (book.quantity < distQuantity) {
             showToast(`Cấp phát thất bại! Sách chỉ còn ${book.quantity} cuốn trong kho.`, 'error');
             return;
         }
-        
+
         const newDistId = 'CP' + String(Date.now()).substring(7);
         const newDist = {
             id: newDistId,
@@ -1152,18 +1152,18 @@ function setupDistributionSubmitHandler() {
             receiveDate: distDate,
             notes
         };
-        
+
         book.quantity -= distQuantity;
         if (book.quantity === 0) {
             book.status = 'Hết sách';
         }
-        
+
         db.distributions.push(newDist);
         saveAllDB();
-        
+
         addAuditLog(currentUser.name, `Cấp phát ${distQuantity} cuốn "${book.title}" cho ${receiverName} (${receiverDepartment})`, 'success');
         showToast('Tạo lệnh cấp phát sách thành công!', 'success');
-        
+
         form.reset();
         populateDistributionFormDropdowns();
         renderDistributions();
@@ -1176,24 +1176,24 @@ function setupDistributionSubmitHandler() {
 function renderNotifications() {
     const list = document.getElementById('noti-list');
     const badge = document.getElementById('noti-count');
-    
+
     if (!list || !badge) return;
-    
+
     let userNotis = db.notifications;
     const unreadCount = userNotis.filter(n => n.unread).length;
-    
+
     badge.innerText = unreadCount;
     badge.style.display = unreadCount > 0 ? 'flex' : 'none';
-    
+
     if (userNotis.length === 0) {
         list.innerHTML = `<li style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.85rem">Không có thông báo mới</li>`;
         return;
     }
-    
+
     list.innerHTML = userNotis.map(n => {
         let iconHtml = '<i data-lucide="info"></i>';
         let bgClass = 'bg-indigo';
-        
+
         if (n.type === 'quá hạn') {
             iconHtml = '<i data-lucide="alert-triangle"></i>';
             bgClass = 'bg-amber';
@@ -1201,7 +1201,7 @@ function renderNotifications() {
             iconHtml = '<i data-lucide="calendar"></i>';
             bgClass = 'bg-purple';
         }
-        
+
         return `
             <li class="noti-item ${n.unread ? 'unread' : ''}" onclick="markNotiAsRead('${n.id}')">
                 <div class="noti-icon-box ${bgClass}" style="width:28px; height:28px; border-radius:50%; color:inherit; display:flex; align-items:center; justify-content:center;">
@@ -1230,23 +1230,23 @@ function setupNotificationsSimulator() {
     const simBtn = document.getElementById('sim-send-noti-btn');
     const clearBtn = document.getElementById('noti-clear-btn');
     const bellBtn = document.getElementById('notification-bell');
-    
+
     if (!simBtn || !clearBtn || !bellBtn) return;
-    
+
     // Toggle bell dropdown
     bellBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         document.getElementById('notifications-dropdown').classList.toggle('show');
     });
-    
+
     document.addEventListener('click', () => {
         document.getElementById('notifications-dropdown').classList.remove('show');
     });
-    
+
     document.getElementById('notifications-dropdown').addEventListener('click', (e) => {
         e.stopPropagation();
     });
-    
+
     // Clear all
     clearBtn.addEventListener('click', () => {
         db.notifications.forEach(n => n.unread = false);
@@ -1254,7 +1254,7 @@ function setupNotificationsSimulator() {
         renderNotifications();
         showToast('Đã đánh dấu đọc tất cả thông báo.', 'success');
     });
-    
+
     // Simulate notifications scheduler run
     simBtn.addEventListener('click', () => {
         addNotification('SYSTEM', 'Hệ thống hoạt động ổn định. Không có nhắc nhở trễ hạn vì ngày dự kiến trả đã được loại bỏ.', 'hệ thống');
@@ -1269,9 +1269,9 @@ function setupNotificationsSimulator() {
 function renderAuditLogs() {
     const container = document.getElementById('audit-log-container');
     const clearBtn = document.getElementById('clear-audit-logs-btn');
-    
+
     if (!container || !clearBtn) return;
-    
+
     clearBtn.onclick = () => {
         if (confirm('Bạn chắc chắn muốn xóa toàn bộ nhật ký hệ thống?')) {
             db.auditLogs = [];
@@ -1280,18 +1280,18 @@ function renderAuditLogs() {
             renderAuditLogs();
         }
     };
-    
+
     if (db.auditLogs.length === 0) {
         container.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted);">Không có nhật ký hoạt động nào.</div>`;
         return;
     }
-    
+
     container.innerHTML = db.auditLogs.map(l => {
         let classVal = 'info';
         if (l.type === 'success') classVal = 'success';
         if (l.type === 'warning') classVal = 'warning';
         if (l.type === 'danger') classVal = 'danger';
-        
+
         return `
             <div class="log-item ${classVal}">
                 <span class="log-message"><b>${l.actor}:</b> ${l.action}</span>
@@ -1313,7 +1313,7 @@ function populateGenreDropdowns() {
             db.genres.map(g => `<option value="${g}">${g}</option>`).join('');
         filterGenre.value = currentVal;
     }
-    
+
     // 2. Book input form genre dropdown
     const bookGenre = document.getElementById('book-input-genre');
     if (bookGenre) {
@@ -1333,7 +1333,7 @@ function populateDepartmentDropdowns() {
             db.departments.map(d => `<option value="${d}">${d}</option>`).join('');
         checkoutDept.value = currentVal;
     }
-    
+
     // 2. Distribution form department dropdown
     const distDept = document.getElementById('dist-receiver-department');
     if (distDept) {
@@ -1342,7 +1342,7 @@ function populateDepartmentDropdowns() {
             db.departments.map(d => `<option value="${d}">${d}</option>`).join('');
         distDept.value = currentVal;
     }
-    
+
     // 3. Return form department dropdown
     const returnDept = document.getElementById('return-reader-department');
     if (returnDept) {
@@ -1397,7 +1397,7 @@ function renderCategories() {
             }).join('');
         }
     }
-    
+
     lucide.createIcons();
 }
 
@@ -1483,24 +1483,24 @@ function setupSystemSettingsHandler() {
     const importBtn = document.getElementById('btn-trigger-import-db');
     const fileInput = document.getElementById('import-db-file-input');
     const resetFactoryBtn = document.getElementById('btn-reset-factory');
-    
+
     if (!rulesForm || !exportBtn || !importBtn || !fileInput) return;
-    
+
     // Load existing parameters into input fields
     document.getElementById('rules-max-borrow').value = db.rules.maxBorrow;
-    
+
     rulesForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        
+
         const maxBorrow = parseInt(document.getElementById('rules-max-borrow').value);
-        
+
         db.rules = { maxBorrow };
         saveDB('rules');
-        
+
         addAuditLog(currentUser.name, `Cập nhật quy định thư viện: Số sách mượn tối đa = ${maxBorrow}.`, 'warning');
         showToast('Lưu quy định thành công!', 'success');
     });
-    
+
     // Factory Reset
     resetFactoryBtn.addEventListener('click', () => {
         if (confirm('CẢNH BÁO: Thao tác này sẽ xóa toàn bộ dữ liệu hiện tại và khôi phục về trạng thái mẫu ban đầu. Bạn có đồng ý?')) {
@@ -1509,7 +1509,7 @@ function setupSystemSettingsHandler() {
             switchTab('dashboard');
         }
     });
-    
+
     // Export Data (JSON File download)
     exportBtn.addEventListener('click', () => {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
@@ -1519,23 +1519,23 @@ function setupSystemSettingsHandler() {
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
         downloadAnchor.remove();
-        
+
         addAuditLog(currentUser.name, 'Xuất bản sao lưu dữ liệu thư viện (Backup JSON) thành công.', 'success');
         showToast('Xuất file sao lưu thành công!', 'success');
     });
-    
+
     // Import Data
     importBtn.addEventListener('click', () => fileInput.click());
-    
+
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        
+
         const reader = new FileReader();
         reader.onload = (event) => {
             try {
                 const parsed = JSON.parse(event.target.result);
-                
+
                 // Validate parsed structure
                 if (parsed.books && parsed.checkouts) {
                     db = {
@@ -1549,10 +1549,10 @@ function setupSystemSettingsHandler() {
                     };
                     saveAllDB();
                     localStorage.setItem('lms_initialized', 'true');
-                    
+
                     addAuditLog('Hệ thống', `Khôi phục dữ liệu thành công từ tệp sao lưu: ${file.name}`, 'success');
                     showToast('Khôi phục cơ sở dữ liệu thành công!', 'success');
-                    
+
                     // Refresh current page
                     initDB();
                     switchTab(currentTab);
@@ -1584,7 +1584,7 @@ function setupModalTriggers() {
             openModal('modal-book');
         });
     }
-    
+
     // Close buttons logic
     document.querySelectorAll('[data-close-modal]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1592,7 +1592,7 @@ function setupModalTriggers() {
             closeModal(modalId);
         });
     });
-    
+
     // Closing modals by clicking backdrop
     document.querySelectorAll('.modal-overlay').forEach(modal => {
         modal.addEventListener('click', (e) => {
@@ -1631,22 +1631,22 @@ function setupSearchAndFilters() {
 function setupThemeToggle() {
     const themeBtn = document.getElementById('theme-toggle-btn');
     const themeIcon = document.getElementById('theme-icon');
-    
+
     if (!themeBtn || !themeIcon) return;
-    
+
     // Check system preference or localStorage
     const savedTheme = localStorage.getItem('lms_theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
     updateThemeIcon(savedTheme);
-    
+
     themeBtn.addEventListener('click', () => {
         const currentTheme = document.documentElement.getAttribute('data-theme');
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        
+
         document.documentElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('lms_theme', newTheme);
         updateThemeIcon(newTheme);
-        
+
         // Redraw chart to adapt styling colors
         if (currentTab === 'dashboard') {
             renderGenreDistributionChart();
@@ -1668,14 +1668,14 @@ function updateThemeIcon(theme) {
 function setupMobileMenu() {
     const sidebar = document.getElementById('sidebar');
     const trigger = document.getElementById('sidebar-toggle-btn');
-    
+
     if (!sidebar || !trigger) return;
-    
+
     trigger.addEventListener('click', (e) => {
         e.stopPropagation();
         sidebar.classList.toggle('open');
     });
-    
+
     document.addEventListener('click', (e) => {
         if (!sidebar.contains(e.target) && e.target !== trigger) {
             sidebar.classList.remove('open');
@@ -1698,7 +1698,7 @@ async function exportToExcel(filename, sheetName, reportTitle, headers, rows) {
         const titleRow = worksheet.addRow([reportTitle.toUpperCase()]);
         worksheet.mergeCells(1, 1, 1, headers.length);
         titleRow.height = 40;
-        
+
         const titleCell = titleRow.getCell(1);
         titleCell.font = {
             name: 'Arial',
@@ -1713,7 +1713,7 @@ async function exportToExcel(filename, sheetName, reportTitle, headers, rows) {
         const dateRow = worksheet.addRow([dateString]);
         worksheet.mergeCells(2, 1, 2, headers.length);
         dateRow.height = 20;
-        
+
         const dateCell = dateRow.getCell(1);
         dateCell.font = {
             name: 'Arial',
@@ -1846,16 +1846,16 @@ function setupExcelExports() {
             const rows = db.books.map((b, index) => {
                 // Tính số lượng sách đang cho mượn (chưa trả)
                 const activeLoansCount = db.checkouts.filter(c => c.bookId === b.id && c.returnDate === null).length;
-                
+
                 // Tổng số lượng đã nhập = Tồn kho + Đang cho mượn
                 const totalImported = b.quantity + activeLoansCount;
-                
+
                 // Ghi chú: Hiển thị vị trí và tình trạng đặc biệt nếu có
                 let notes = b.location ? `Vị trí: ${b.location}` : 'Chưa phân vị trí';
                 if (b.quantity === 0) {
                     notes += ' (Hết sách trong kho)';
                 }
-                
+
                 return [
                     index + 1, // STT
                     b.title,
@@ -1867,7 +1867,7 @@ function setupExcelExports() {
                     notes
                 ];
             });
-            
+
             await exportToExcel(
                 `danh_sach_sach_${new Date().toISOString().split('T')[0]}.xlsx`,
                 'Danh sách Sách',
@@ -1941,7 +1941,7 @@ function setupExcelExports() {
                     });
                 }
             });
-            
+
             if (returnEventsFlat.length === 0) {
                 showToast('Không có dữ liệu sách đã trả để xuất!', 'warning');
                 return;
@@ -2020,7 +2020,7 @@ function setupLoginHandler() {
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Initialize data
     initDB();
-    
+
     // 2. Setup systems
     setupThemeToggle();
     setupMobileMenu();
@@ -2030,28 +2030,28 @@ document.addEventListener('DOMContentLoaded', () => {
     setupExcelExports();
     setupCategoriesSubmitHandlers();
     setupLoginHandler();
-    
+
     // Initial dropdown population
     populateGenreDropdowns();
     populateDepartmentDropdowns();
-    
+
     // Forms
     setupBookFormHandler();
     setupBookCoverUploader();
     setupCheckoutFormHandler();
     setupReturnSubmitHandler();
     setupDistributionSubmitHandler();
-    
+
     // Renders first page
     handleRoleChange('admin'); // default boot as admin
-    
+
     // Auto-sync every 15 seconds
     setInterval(async () => {
         try {
             const response = await fetch(`${API_BASE_URL}/data`);
             if (!response.ok) return;
             const data = await response.json();
-            
+
             // Silently update state
             db.books = data.books || [];
             db.checkouts = data.checkouts || [];
@@ -2061,9 +2061,9 @@ document.addEventListener('DOMContentLoaded', () => {
             db.rules = data.rules || db.rules;
             db.genres = data.genres || db.genres;
             db.departments = data.departments || db.departments;
-            
+
             saveAllDBLocal(); // Update local cache
-            
+
             // Re-render active tab seamlessly
             if (currentTab === 'dashboard') loadDashboardStats();
             else if (currentTab === 'books') renderBooks();
@@ -2074,7 +2074,9 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn('Auto-sync failed:', err);
         }
     }, 15000);
-    
+
     // Init icons
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
 });
