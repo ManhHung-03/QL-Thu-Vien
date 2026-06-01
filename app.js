@@ -559,6 +559,8 @@ function renderBooks() {
         return matchSearch && matchGenre && matchStatus && matchSource;
     });
 
+    filtered.sort((a, b) => new Date(a.importDate || 0) - new Date(b.importDate || 0));
+
     if (filtered.length === 0) {
         container.innerHTML = `
             <div style="grid-column: 1/-1; text-align:center; padding: 40px; color: var(--text-muted);">
@@ -1740,22 +1742,7 @@ async function exportToExcel(filename, sheetName, reportTitle, headers, rows) {
         };
         titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
 
-        // 2. EXPORT DATE ROW (Row 2)
-        const dateString = `Ngày xuất báo cáo: ${new Date().toLocaleString('vi-VN')}`;
-        const dateRow = worksheet.addRow([dateString]);
-        worksheet.mergeCells(2, 1, 2, headers.length);
-        dateRow.height = 20;
-
-        const dateCell = dateRow.getCell(1);
-        dateCell.font = {
-            name: 'Arial',
-            size: 10,
-            italic: true,
-            color: { argb: 'FF64748B' } // Slate Gray
-        };
-        dateCell.alignment = { vertical: 'middle', horizontal: 'center' };
-
-        // 3. EMPTY SEPARATOR ROW (Row 3)
+        // 2. EMPTY SEPARATOR ROW (Row 2)
         worksheet.addRow([]);
 
         // 4. TABLE HEADER ROW (Row 4)
@@ -1767,12 +1754,12 @@ async function exportToExcel(filename, sheetName, reportTitle, headers, rows) {
                 name: 'Arial',
                 size: 11,
                 bold: true,
-                color: { argb: 'FFFFFFFF' } // White text
+                color: { argb: 'FF000000' } // Black text
             };
             cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: { argb: 'FF4F46E5' } // Indigo fill
+                fgColor: { argb: 'FFFFFFFF' } // White fill
             };
             cell.alignment = {
                 vertical: 'middle',
@@ -1792,9 +1779,8 @@ async function exportToExcel(filename, sheetName, reportTitle, headers, rows) {
             const dataRow = worksheet.addRow(row);
             dataRow.height = 24;
 
-            // Zebra striping for premium look
-            const isEven = index % 2 === 0;
-            const rowBgColor = isEven ? 'FFFFFFFF' : 'FFF8FAFC'; // White vs extremely light Slate
+            // No zebra striping, just white background
+            const rowBgColor = 'FFFFFFFF'; // White
 
             dataRow.eachCell((cell, colNumber) => {
                 cell.font = {
@@ -1839,7 +1825,7 @@ async function exportToExcel(filename, sheetName, reportTitle, headers, rows) {
             let maxLength = 0;
             column.eachCell({ includeEmpty: true }, (cell, rowNumber) => {
                 // Calculate size based only on data & headers, skip Title rows
-                if (rowNumber > 3) {
+                if (rowNumber > 2) {
                     const cellLength = cell.value ? String(cell.value).length : 0;
                     if (cellLength > maxLength) {
                         maxLength = cellLength;
@@ -1875,7 +1861,8 @@ function setupExcelExports() {
     if (exportBooksBtn) {
         exportBooksBtn.addEventListener('click', async () => {
             const headers = ['STT', 'Tên sách', 'Thể loại', 'Nguồn gốc', 'Ngày nhập sách', 'Tổng số lượng đã nhập', 'Đã cho mượn', 'Số lượng tồn kho', 'Ghi chú'];
-            const rows = db.books.map((b, index) => {
+            const sortedBooks = [...db.books].sort((a, b) => new Date(a.importDate || 0) - new Date(b.importDate || 0));
+            const rows = sortedBooks.map((b, index) => {
                 // Tính số lượng sách đang cho mượn (chưa trả)
                 const activeLoansCount = db.checkouts.filter(c => c.bookId === b.id && c.returnDate === null).length;
 
