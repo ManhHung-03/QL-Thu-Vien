@@ -1642,6 +1642,9 @@ function setupSearchAndFilters() {
     document.getElementById('books-search-query').addEventListener('input', renderBooks);
     document.getElementById('filter-genre').addEventListener('change', renderBooks);
     document.getElementById('filter-status').addEventListener('change', renderBooks);
+    if (document.getElementById('filter-source')) {
+        document.getElementById('filter-source').addEventListener('change', renderBooks);
+    }
 }
 
 // Theme Toggle logic (Light / Dark)
