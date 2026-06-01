@@ -533,6 +533,7 @@ function renderBooks() {
     const searchQuery = document.getElementById('books-search-query').value.toLowerCase().trim();
     const filterGenre = document.getElementById('filter-genre').value;
     const filterStatus = document.getElementById('filter-status').value;
+    const filterSource = document.getElementById('filter-source') ? document.getElementById('filter-source').value : '';
 
     // Filter logic
     const filtered = db.books.filter(b => {
@@ -552,7 +553,10 @@ function renderBooks() {
         }
         const matchStatus = filterStatus === '' || currentStatus === filterStatus;
 
-        return matchSearch && matchGenre && matchStatus;
+        // 4. Source Filter
+        const matchSource = filterSource === '' || b.source === filterSource || (!b.source && filterSource === 'Được mua'); // default as Được mua for old data
+
+        return matchSearch && matchGenre && matchStatus && matchSource;
     });
 
     if (filtered.length === 0) {
@@ -617,6 +621,7 @@ function renderBooks() {
                     <h3 class="book-title" title="${b.title}">${b.title}</h3>
                     <div class="book-meta">
                         <span class="book-meta-item"><i data-lucide="tag" style="width:14px; height:14px;"></i>${b.genre}</span>
+                        <span class="book-meta-item"><i data-lucide="download" style="width:14px; height:14px;"></i>${b.source || 'Được mua'}</span>
                         <span class="book-meta-item"><i data-lucide="calendar" style="width:14px; height:14px;"></i>${dateText}</span>
                         <span class="book-meta-item"><i data-lucide="layers" style="width:14px; height:14px;"></i>Tồn kho: ${b.quantity} cuốn</span>
                         <span class="book-meta-item" title="${noteText}"><i data-lucide="message-square" style="width:14px; height:14px;"></i>${noteText}</span>
@@ -637,6 +642,9 @@ function openBookDetailModal(id) {
 
     document.getElementById('detail-book-title').innerText = b.title;
     document.getElementById('detail-book-genre').innerText = b.genre;
+    if (document.getElementById('detail-book-source')) {
+        document.getElementById('detail-book-source').innerText = b.source || 'Được mua';
+    }
     document.getElementById('detail-book-import-date').innerText = formatDateVN(b.importDate) || '--';
     document.getElementById('detail-book-qty').innerText = `${b.quantity} cuốn`;
     document.getElementById('detail-book-notes').innerText = b.notes || 'Không có';
@@ -674,6 +682,9 @@ function openEditBookModal(id) {
     document.getElementById('form-book-id').value = b.id;
     document.getElementById('book-input-title').value = b.title;
     document.getElementById('book-input-genre').value = b.genre;
+    if (document.getElementById('book-input-source')) {
+        document.getElementById('book-input-source').value = b.source || 'Được mua';
+    }
     document.getElementById('book-input-import-date').value = b.importDate || getOffsetDate(0);
     document.getElementById('book-input-quantity').value = b.quantity;
     document.getElementById('book-input-notes').value = b.notes || '';
@@ -743,6 +754,7 @@ function setupBookFormHandler() {
         const bookId = document.getElementById('form-book-id').value;
         const title = document.getElementById('book-input-title').value.trim();
         const genre = document.getElementById('book-input-genre').value;
+        const source = document.getElementById('book-input-source') ? document.getElementById('book-input-source').value : 'Được mua';
         const importDate = document.getElementById('book-input-import-date').value;
         const quantity = parseInt(document.getElementById('book-input-quantity').value);
         const notes = document.getElementById('book-input-notes').value.trim();
@@ -757,6 +769,7 @@ function setupBookFormHandler() {
             if (bIndex > -1) {
                 db.books[bIndex].title = title;
                 db.books[bIndex].genre = genre;
+                db.books[bIndex].source = source;
                 db.books[bIndex].importDate = importDate;
                 db.books[bIndex].quantity = quantity;
                 db.books[bIndex].notes = notes;
@@ -776,6 +789,7 @@ function setupBookFormHandler() {
                 id: newId,
                 title,
                 genre,
+                source,
                 importDate,
                 quantity,
                 notes,
@@ -1579,6 +1593,9 @@ function setupModalTriggers() {
             document.getElementById('book-modal-title').innerText = 'Thêm sách mới';
             document.getElementById('form-book-id').value = '';
             document.getElementById('book-form').reset();
+            if (document.getElementById('book-input-source')) {
+                document.getElementById('book-input-source').value = 'Được mua';
+            }
             document.getElementById('book-input-import-date').value = getOffsetDate(0); // Mặc định ngày hôm nay
             document.getElementById('book-cover-upload-preview').style.display = 'none';
             openModal('modal-book');
@@ -1854,7 +1871,7 @@ function setupExcelExports() {
     const exportBooksBtn = document.getElementById('btn-export-books-excel');
     if (exportBooksBtn) {
         exportBooksBtn.addEventListener('click', async () => {
-            const headers = ['STT', 'Tên sách', 'Thể loại', 'Ngày nhập sách', 'Tổng số lượng đã nhập', 'Đã cho mượn', 'Số lượng tồn kho', 'Ghi chú'];
+            const headers = ['STT', 'Tên sách', 'Thể loại', 'Nguồn gốc', 'Ngày nhập sách', 'Tổng số lượng đã nhập', 'Đã cho mượn', 'Số lượng tồn kho', 'Ghi chú'];
             const rows = db.books.map((b, index) => {
                 // Tính số lượng sách đang cho mượn (chưa trả)
                 const activeLoansCount = db.checkouts.filter(c => c.bookId === b.id && c.returnDate === null).length;
@@ -1869,6 +1886,7 @@ function setupExcelExports() {
                     index + 1, // STT
                     b.title,
                     b.genre,
+                    b.source || 'Được mua',
                     formatDateVN(b.importDate) || 'Chưa rõ',
                     totalImported,
                     activeLoansCount,

@@ -196,6 +196,12 @@
                                 <option value="Đang được mượn">Đang được mượn</option>
                             </select>
 
+                            <select class="select-filter" id="filter-source">
+                                <option value="">Tất cả Nguồn gốc</option>
+                                <option value="Được mua">Được mua</option>
+                                <option value="Được cấp">Được cấp</option>
+                            </select>
+
                             <button class="btn-secondary" id="btn-export-books-excel">
                                 <i data-lucide="download"></i>
                                 Xuất Excel sách
@@ -540,6 +546,15 @@
                         </div>
 
                         <div class="form-group">
+                            <label class="form-label" for="book-input-source">Nguồn gốc <span
+                                    style="color:var(--danger)">*</span></label>
+                            <select class="form-select" id="book-input-source" required>
+                                <option value="Được mua">Được mua</option>
+                                <option value="Được cấp">Được cấp</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
                             <label class="form-label" for="book-input-import-date">Ngày nhập sách <span
                                     style="color:var(--danger)">*</span></label>
                             <input type="date" class="form-input" id="book-input-import-date" required>
@@ -601,6 +616,11 @@
                         <div class="detail-row">
                             <span class="detail-label">Thể loại</span>
                             <span class="detail-value" id="detail-book-genre">...</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Nguồn gốc</span>
+                            <span class="detail-value" id="detail-book-source">...</span>
                         </div>
 
                         <div class="detail-row">
