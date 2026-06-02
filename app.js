@@ -589,33 +589,26 @@ function renderBooks() {
 
         const coverSrc = b.cover || generateBookCover(b.title, '', b.genre);
 
-        // Define action buttons based on Role
+        // Define action buttons
         let actionButtons = `
             <button class="book-action-btn" onclick="openBookDetailModal('${b.id}')">
                 <i data-lucide="eye"></i>
                 Chi tiết
             </button>
+            <button class="book-action-btn" onclick="openEditBookModal('${b.id}')">
+                <i data-lucide="edit"></i>
+                Sửa
+            </button>
+            <button class="book-action-btn btn-delete-icon" onclick="deleteBook('${b.id}')">
+                <i data-lucide="trash-2"></i>
+                Xóa
+            </button>
         `;
-
-        if (currentRole === 'admin' || currentRole === 'librarian') {
-            actionButtons += `
-                <button class="book-action-btn" onclick="openEditBookModal('${b.id}')">
-                    <i data-lucide="edit"></i>
-                    Sửa
-                </button>
-                <button class="book-action-btn btn-delete-icon" onclick="deleteBook('${b.id}')">
-                    <i data-lucide="trash-2"></i>
-                    Xóa
-                </button>
-            `;
-        }
 
         const dateText = b.importDate ? `Ngày nhập: ${formatDateVN(b.importDate)}` : 'Ngày nhập: --';
         const noteText = b.notes ? `Ghi chú: ${b.notes}` : 'Ghi chú: Không';
 
-        const dblClickEvent = (currentRole === 'admin' || currentRole === 'librarian') 
-            ? `ondblclick="openEditBookModal('${b.id}')"` 
-            : `ondblclick="openBookDetailModal('${b.id}')"`;
+        const dblClickEvent = `ondblclick="openEditBookModal('${b.id}')"`;
 
         return `
             <div class="book-card" id="book-card-${b.id}" ${dblClickEvent} title="Nhấp đúp để xem/sửa">
@@ -894,9 +887,9 @@ function renderCheckouts() {
         const qtyText = `${c.quantity || 1} (Đã trả ${c.returnedQuantity || 0})`;
 
         return `
-            <tr>
+            <tr ondblclick="openEditCheckoutModal('${c.id}')" style="cursor:pointer;" title="Nhấp đúp để sửa phiếu mượn">
                 <td><b>${c.id}</b></td>
-                <td ondblclick="inlineEditCheckout('${c.id}', 'memberName')" style="cursor:pointer;" title="Nhấp đúp để sửa độc giả">${c.memberName}${deptSuffix}</td>
+                <td>${c.memberName}${deptSuffix}</td>
                 <td>${c.bookTitle}</td>
                 <td>${qtyText}</td>
                 <td>${formatDateVN(c.borrowDate)}</td>
@@ -1148,14 +1141,14 @@ function renderDistributions() {
     const sorted = [...filtered].sort((a, b) => new Date(b.receiveDate) - new Date(a.receiveDate));
 
     tbody.innerHTML = sorted.map(d => `
-        <tr>
+        <tr ondblclick="openEditDistributionModal('${d.id}')" style="cursor:pointer;" title="Nhấp đúp để sửa lệnh cấp sách">
             <td><b>${d.id}</b></td>
             <td>${d.bookTitle}</td>
             <td>${d.quantity}</td>
-            <td ondblclick="inlineEditDistribution('${d.id}', 'receiverName')" style="cursor:pointer;" title="Nhấp đúp để sửa tên">${d.receiverName}</td>
-            <td ondblclick="inlineEditDistribution('${d.id}', 'receiverDepartment')" style="cursor:pointer;" title="Nhấp đúp để sửa phòng ban">${d.receiverDepartment}</td>
+            <td>${d.receiverName}</td>
+            <td>${d.receiverDepartment}</td>
             <td>${formatDateVN(d.receiveDate)}</td>
-            <td ondblclick="inlineEditDistribution('${d.id}', 'notes')" style="cursor:pointer;" title="Nhấp đúp để sửa ghi chú">${d.notes || ''}</td>
+            <td>${d.notes || ''}</td>
         </tr>
     `).join('');
 }
@@ -2095,6 +2088,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCheckoutFormHandler();
     setupReturnSubmitHandler();
     setupDistributionSubmitHandler();
+    setupEditCheckoutFormHandler();
+    setupEditDistributionFormHandler();
 
     // Renders first page
     handleRoleChange('admin'); // default boot as admin
@@ -2215,5 +2210,112 @@ function inlineEditDistribution(distId, field) {
     renderDistributions();
     showToast('Cập nhật thông tin cấp phát thành công!', 'success');
     addAuditLog(currentUser.name, `Cập nhật lệnh cấp phát ${distId}: ${oldVal} -> ${newVal.trim()}`, 'info');
+}
+
+// ==========================================
+// FULL EDIT MODALS
+// ==========================================
+function openEditCheckoutModal(id) {
+    const c = db.checkouts.find(x => x.id === id);
+    if (!c) return;
+
+    document.getElementById('edit-checkout-id').value = c.id;
+    document.getElementById('edit-checkout-reader-name').value = c.memberName;
+    
+    const deptSelect = document.getElementById('edit-checkout-reader-department');
+    deptSelect.innerHTML = '<option value="">-- Chọn phòng ban --</option>' + db.departments.map(d => `<option value="${d}">${d}</option>`).join('');
+    deptSelect.value = c.memberDepartment || '';
+
+    const bookSelect = document.getElementById('edit-checkout-book-id');
+    const allBooks = db.books;
+    bookSelect.innerHTML = '<option value="">-- Chọn sách --</option>' + allBooks.map(b => `<option value="${b.id}">${b.title}</option>`).join('');
+    bookSelect.value = c.bookId;
+
+    document.getElementById('edit-checkout-date').value = c.borrowDate;
+    document.getElementById('edit-checkout-quantity').value = c.quantity;
+    document.getElementById('edit-checkout-notes').value = c.notes || '';
+
+    openModal('modal-edit-checkout');
+}
+
+function setupEditCheckoutFormHandler() {
+    const form = document.getElementById('edit-checkout-form');
+    if (!form) return;
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id = document.getElementById('edit-checkout-id').value;
+        const c = db.checkouts.find(x => x.id === id);
+        if (!c) return;
+        
+        c.memberName = document.getElementById('edit-checkout-reader-name').value.trim();
+        c.memberDepartment = document.getElementById('edit-checkout-reader-department').value;
+        const bookId = document.getElementById('edit-checkout-book-id').value;
+        const book = db.books.find(b => b.id === bookId);
+        if (book) {
+            c.bookId = bookId;
+            c.bookTitle = book.title;
+        }
+        c.borrowDate = document.getElementById('edit-checkout-date').value;
+        c.quantity = parseInt(document.getElementById('edit-checkout-quantity').value) || 1;
+        c.notes = document.getElementById('edit-checkout-notes').value.trim();
+
+        saveAllDB();
+        renderCheckouts();
+        showToast('Cập nhật phiếu mượn thành công!', 'success');
+        addAuditLog(currentUser.name, `Đã sửa phiếu mượn: ${id}`, 'success');
+        closeModal(document.getElementById('modal-edit-checkout'));
+    });
+}
+
+function openEditDistributionModal(id) {
+    const d = db.distributions.find(x => x.id === id);
+    if (!d) return;
+
+    document.getElementById('edit-dist-id').value = d.id;
+    document.getElementById('edit-dist-receiver-name').value = d.receiverName;
+    
+    const deptSelect = document.getElementById('edit-dist-receiver-department');
+    deptSelect.innerHTML = '<option value="">-- Chọn phòng ban --</option>' + db.departments.map(dept => `<option value="${dept}">${dept}</option>`).join('');
+    deptSelect.value = d.receiverDepartment || '';
+
+    const bookSelect = document.getElementById('edit-dist-book-id');
+    const allBooks = db.books;
+    bookSelect.innerHTML = '<option value="">-- Chọn sách --</option>' + allBooks.map(b => `<option value="${b.id}">${b.title}</option>`).join('');
+    bookSelect.value = d.bookId;
+
+    document.getElementById('edit-dist-quantity').value = d.quantity;
+    document.getElementById('edit-dist-date').value = d.receiveDate;
+    document.getElementById('edit-dist-notes').value = d.notes || '';
+
+    openModal('modal-edit-distribution');
+}
+
+function setupEditDistributionFormHandler() {
+    const form = document.getElementById('edit-distribution-form');
+    if (!form) return;
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id = document.getElementById('edit-dist-id').value;
+        const d = db.distributions.find(x => x.id === id);
+        if (!d) return;
+        
+        d.receiverName = document.getElementById('edit-dist-receiver-name').value.trim();
+        d.receiverDepartment = document.getElementById('edit-dist-receiver-department').value;
+        const bookId = document.getElementById('edit-dist-book-id').value;
+        const book = db.books.find(b => b.id === bookId);
+        if (book) {
+            d.bookId = bookId;
+            d.bookTitle = book.title;
+        }
+        d.quantity = parseInt(document.getElementById('edit-dist-quantity').value) || 1;
+        d.receiveDate = document.getElementById('edit-dist-date').value;
+        d.notes = document.getElementById('edit-dist-notes').value.trim();
+
+        saveAllDB();
+        renderDistributions();
+        showToast('Cập nhật lệnh cấp phát thành công!', 'success');
+        addAuditLog(currentUser.name, `Đã sửa lệnh cấp phát: ${id}`, 'success');
+        closeModal(document.getElementById('modal-edit-distribution'));
+    });
 }
 

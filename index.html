@@ -736,6 +736,108 @@
         </div>
     </div>
 
+    <!-- EDIT CHECKOUT MODAL -->
+    <div class="modal-overlay" id="modal-edit-checkout">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Sửa Phiếu Mượn Sách</h3>
+                <button class="modal-close" data-close-modal="modal-edit-checkout">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="edit-checkout-form">
+                <div class="modal-body">
+                    <input type="hidden" id="edit-checkout-id">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="edit-checkout-reader-name">Họ và tên độc giả <span style="color:var(--danger)">*</span></label>
+                            <input type="text" class="form-input" id="edit-checkout-reader-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-checkout-reader-department">Phòng ban <span style="color:var(--danger)">*</span></label>
+                            <select class="form-select" id="edit-checkout-reader-department" required>
+                                <option value="">-- Chọn phòng ban --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-checkout-book-id">Chọn sách mượn <span style="color:var(--danger)">*</span></label>
+                            <select class="form-select" id="edit-checkout-book-id" required>
+                                <option value="">-- Chọn sách --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-checkout-date">Ngày mượn</label>
+                            <input type="date" class="form-input" id="edit-checkout-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-checkout-quantity">Số lượng mượn <span style="color:var(--danger)">*</span></label>
+                            <input type="number" class="form-input" id="edit-checkout-quantity" min="1" required>
+                        </div>
+                        <div class="form-group full-width">
+                            <label class="form-label" for="edit-checkout-notes">Ghi chú phiếu mượn</label>
+                            <textarea class="form-textarea" id="edit-checkout-notes"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" data-close-modal="modal-edit-checkout">Hủy</button>
+                    <button type="submit" class="btn-primary">Lưu thông tin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- EDIT DISTRIBUTION MODAL -->
+    <div class="modal-overlay" id="modal-edit-distribution">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Sửa Lệnh Cấp Sách</h3>
+                <button class="modal-close" data-close-modal="modal-edit-distribution">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="edit-distribution-form">
+                <div class="modal-body">
+                    <input type="hidden" id="edit-dist-id">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="edit-dist-receiver-name">Tên người nhận <span style="color:var(--danger)">*</span></label>
+                            <input type="text" class="form-input" id="edit-dist-receiver-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-dist-receiver-department">Phòng ban <span style="color:var(--danger)">*</span></label>
+                            <select class="form-select" id="edit-dist-receiver-department" required>
+                                <option value="">-- Chọn phòng ban --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-dist-book-id">Chọn sách <span style="color:var(--danger)">*</span></label>
+                            <select class="form-select" id="edit-dist-book-id" required>
+                                <option value="">-- Chọn sách --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-dist-quantity">Số lượng cấp <span style="color:var(--danger)">*</span></label>
+                            <input type="number" class="form-input" id="edit-dist-quantity" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-dist-date">Ngày nhận</label>
+                            <input type="date" class="form-input" id="edit-dist-date" required>
+                        </div>
+                        <div class="form-group full-width">
+                            <label class="form-label" for="edit-dist-notes">Ghi chú</label>
+                            <input type="text" class="form-input" id="edit-dist-notes">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" data-close-modal="modal-edit-distribution">Hủy</button>
+                    <button type="submit" class="btn-primary">Lưu thông tin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Toast Message Container -->
     <div class="toast-container" id="toast-container"></div>
 
