@@ -892,7 +892,7 @@ function renderCheckouts() {
         return `
             <tr>
                 <td><b>${c.id}</b></td>
-                <td>${c.memberName}${deptSuffix}</td>
+                <td ondblclick="inlineEditCheckout('${c.id}', 'memberName')" style="cursor:pointer;" title="Nhấp đúp để sửa độc giả">${c.memberName}${deptSuffix}</td>
                 <td>${c.bookTitle}</td>
                 <td>${qtyText}</td>
                 <td>${formatDateVN(c.borrowDate)}</td>
@@ -1148,10 +1148,10 @@ function renderDistributions() {
             <td><b>${d.id}</b></td>
             <td>${d.bookTitle}</td>
             <td>${d.quantity}</td>
-            <td>${d.receiverName}</td>
-            <td>${d.receiverDepartment}</td>
+            <td ondblclick="inlineEditDistribution('${d.id}', 'receiverName')" style="cursor:pointer;" title="Nhấp đúp để sửa tên">${d.receiverName}</td>
+            <td ondblclick="inlineEditDistribution('${d.id}', 'receiverDepartment')" style="cursor:pointer;" title="Nhấp đúp để sửa phòng ban">${d.receiverDepartment}</td>
             <td>${formatDateVN(d.receiveDate)}</td>
-            <td>${d.notes || ''}</td>
+            <td ondblclick="inlineEditDistribution('${d.id}', 'notes')" style="cursor:pointer;" title="Nhấp đúp để sửa ghi chú">${d.notes || ''}</td>
         </tr>
     `).join('');
 }
@@ -1401,7 +1401,7 @@ function renderCategories() {
                 return `
                     <tr>
                         <td><b>${index + 1}</b></td>
-                        <td>${g}</td>
+                        <td ondblclick="inlineEditCategory('${g}', 'genre')" style="cursor: pointer;" title="Nhấp đúp để sửa tên">${g}</td>
                         <td style="text-align: center;">
                             <button class="btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="deleteGenre('${g}')">
                                 <i data-lucide="trash-2" style="width:12px; height:12px; vertical-align:middle; margin-right:4px;"></i> Xóa
@@ -1423,7 +1423,7 @@ function renderCategories() {
                 return `
                     <tr>
                         <td><b>${index + 1}</b></td>
-                        <td>${d}</td>
+                        <td ondblclick="inlineEditCategory('${d}', 'department')" style="cursor: pointer;" title="Nhấp đúp để sửa tên">${d}</td>
                         <td style="text-align: center;">
                             <button class="btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="deleteDepartment('${d}')">
                                 <i data-lucide="trash-2" style="width:12px; height:12px; vertical-align:middle; margin-right:4px;"></i> Xóa
@@ -2130,3 +2130,86 @@ document.addEventListener('DOMContentLoaded', () => {
         lucide.createIcons();
     }
 });
+
+// ==========================================
+// 16. INLINE EDITING LOGIC
+// ==========================================
+function inlineEditCategory(oldName, type) {
+    const typeLabel = type === 'genre' ? 'thể loại' : 'phòng ban';
+    const newName = prompt(`Nhập tên ${typeLabel} mới (để thay thế "${oldName}"):`, oldName);
+    if (newName === null || newName.trim() === '' || newName.trim() === oldName) return;
+
+    const trimmed = newName.trim();
+    if (type === 'genre') {
+        if (db.genres.includes(trimmed)) return showToast(`Thể loại "${trimmed}" đã tồn tại!`, 'warning');
+        const index = db.genres.indexOf(oldName);
+        if (index > -1) db.genres[index] = trimmed;
+        // Cập nhật sách đang dùng thể loại cũ
+        db.books.forEach(b => { if (b.genre === oldName) b.genre = trimmed; });
+        saveAllDB();
+        renderCategories();
+        populateGenreDropdowns();
+        showToast(`Đã đổi tên thể loại thành "${trimmed}"`, 'success');
+        addAuditLog(currentUser.name, `Đổi tên thể loại: ${oldName} -> ${trimmed}`, 'success');
+    } else {
+        if (db.departments.includes(trimmed)) return showToast(`Phòng ban "${trimmed}" đã tồn tại!`, 'warning');
+        const index = db.departments.indexOf(oldName);
+        if (index > -1) db.departments[index] = trimmed;
+        saveAllDB();
+        renderCategories();
+        populateDepartmentDropdowns();
+        showToast(`Đã đổi tên phòng ban thành "${trimmed}"`, 'success');
+        addAuditLog(currentUser.name, `Đổi tên phòng ban: ${oldName} -> ${trimmed}`, 'success');
+    }
+}
+
+function inlineEditCheckout(checkoutId, field) {
+    const checkout = db.checkouts.find(c => c.id === checkoutId);
+    if (!checkout) return;
+
+    let promptMsg = '';
+    let currentValue = '';
+    if (field === 'memberName') {
+        promptMsg = 'Nhập tên độc giả mới:';
+        currentValue = checkout.memberName;
+    } else {
+        return;
+    }
+
+    const newVal = prompt(promptMsg, currentValue);
+    if (newVal === null || newVal.trim() === '' || newVal.trim() === currentValue) return;
+
+    const oldVal = checkout[field];
+    checkout[field] = newVal.trim();
+    saveAllDB();
+    renderCheckouts();
+    showToast('Cập nhật thông tin phiếu mượn thành công!', 'success');
+    addAuditLog(currentUser.name, `Cập nhật phiếu mượn ${checkoutId}: ${oldVal} -> ${newVal.trim()}`, 'info');
+}
+
+function inlineEditDistribution(distId, field) {
+    const dist = db.distributions.find(d => d.id === distId);
+    if (!dist) return;
+
+    let promptMsg = '';
+    let currentValue = dist[field] || '';
+    if (field === 'receiverName') promptMsg = 'Nhập tên người nhận mới:';
+    else if (field === 'receiverDepartment') promptMsg = 'Nhập tên phòng ban nhận mới:';
+    else if (field === 'notes') promptMsg = 'Nhập ghi chú mới:';
+    else return;
+
+    const newVal = prompt(promptMsg, currentValue);
+    if (newVal === null || newVal.trim() === currentValue) return;
+    if ((field === 'receiverName' || field === 'receiverDepartment') && newVal.trim() === '') {
+        showToast('Trường này không được để trống!', 'error');
+        return;
+    }
+
+    const oldVal = dist[field] || 'trống';
+    dist[field] = newVal.trim();
+    saveAllDB();
+    renderDistributions();
+    showToast('Cập nhật thông tin cấp phát thành công!', 'success');
+    addAuditLog(currentUser.name, `Cập nhật lệnh cấp phát ${distId}: ${oldVal} -> ${newVal.trim()}`, 'info');
+}
+
