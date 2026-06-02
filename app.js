@@ -613,8 +613,12 @@ function renderBooks() {
         const dateText = b.importDate ? `Ngày nhập: ${formatDateVN(b.importDate)}` : 'Ngày nhập: --';
         const noteText = b.notes ? `Ghi chú: ${b.notes}` : 'Ghi chú: Không';
 
+        const dblClickEvent = (currentRole === 'admin' || currentRole === 'librarian') 
+            ? `ondblclick="openEditBookModal('${b.id}')"` 
+            : `ondblclick="openBookDetailModal('${b.id}')"`;
+
         return `
-            <div class="book-card" id="book-card-${b.id}">
+            <div class="book-card" id="book-card-${b.id}" ${dblClickEvent} title="Nhấp đúp để xem/sửa">
                 <div class="book-cover-container">
                     <img src="${coverSrc}" class="book-cover-img" alt="${b.title}">
                     <span class="book-status-badge ${statusClass}">${statusLabel}</span>
