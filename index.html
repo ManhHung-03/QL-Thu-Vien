@@ -305,7 +305,12 @@
                     <div class="card-header"
                         style="margin:32px 0 16px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
                         <h3 class="card-title">Danh Sách Phiếu Mượn Hiện Hành</h3>
-                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                            <div class="search-box-wrapper" style="margin: 0;">
+                                <i data-lucide="search" class="search-icon-inside"></i>
+                                <input type="text" class="search-input" id="checkouts-search-query"
+                                    placeholder="Tìm theo mã, độc giả, sách...">
+                            </div>
                             <button class="btn-secondary" id="btn-export-active-checkouts">
                                 <i data-lucide="download"></i>
                                 Xuất Excel Sách Đang Mượn
@@ -398,10 +403,17 @@
                     <div class="card-header"
                         style="margin:32px 0 16px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
                         <h3 class="card-title">Lịch Sử Cấp Phát Sách</h3>
-                        <button class="btn-secondary" id="btn-export-distributions-excel">
-                            <i data-lucide="download"></i>
-                            Xuất Excel Lịch Sử Cấp Phát
-                        </button>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                            <div class="search-box-wrapper" style="margin: 0;">
+                                <i data-lucide="search" class="search-icon-inside"></i>
+                                <input type="text" class="search-input" id="distributions-search-query"
+                                    placeholder="Tìm theo mã, người nhận, sách...">
+                            </div>
+                            <button class="btn-secondary" id="btn-export-distributions-excel">
+                                <i data-lucide="download"></i>
+                                Xuất Excel Lịch Sử Cấp Phát
+                            </button>
+                        </div>
                     </div>
                     <div class="table-wrapper">
                         <table class="data-table">

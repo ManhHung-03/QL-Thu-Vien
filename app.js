@@ -838,14 +838,25 @@ function renderCheckouts() {
     const activeCheckouts = db.checkouts.filter(c => c.status !== 'Đã trả');
     document.getElementById('checkout-active-count').innerText = activeCheckouts.length;
 
+    const searchQuery = (document.getElementById('checkouts-search-query')?.value || '').toLowerCase().trim();
+
+    // Filter logic
+    const filteredCheckouts = db.checkouts.filter(c => {
+        if (!searchQuery) return true;
+        const matchId = c.id.toLowerCase().includes(searchQuery);
+        const matchName = c.memberName.toLowerCase().includes(searchQuery);
+        const matchBook = c.bookTitle.toLowerCase().includes(searchQuery);
+        return matchId || matchName || matchBook;
+    });
+
     // Main checkout table
-    if (db.checkouts.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:24px;">Không có phiếu mượn nào được ghi nhận.</td></tr>`;
+    if (filteredCheckouts.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:24px;">Không có phiếu mượn nào được ghi nhận phù hợp.</td></tr>`;
         return;
     }
 
     // Render list (sorted by active/status first, then borrow date descending)
-    const sorted = [...db.checkouts].sort((a, b) => {
+    const sorted = [...filteredCheckouts].sort((a, b) => {
         if (a.status !== 'Đã trả' && b.status === 'Đã trả') return -1;
         if (a.status === 'Đã trả' && b.status !== 'Đã trả') return 1;
         return new Date(b.borrowDate) - new Date(a.borrowDate);
@@ -1115,12 +1126,22 @@ function renderDistributions() {
     const tbody = document.getElementById('distributions-table-body');
     if (!tbody) return;
 
-    if (db.distributions.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px;">Không có lệnh cấp phát sách nào.</td></tr>`;
+    const searchQuery = (document.getElementById('distributions-search-query')?.value || '').toLowerCase().trim();
+
+    const filtered = db.distributions.filter(d => {
+        if (!searchQuery) return true;
+        const matchId = d.id.toLowerCase().includes(searchQuery);
+        const matchReceiver = d.receiverName.toLowerCase().includes(searchQuery);
+        const matchBook = d.bookTitle.toLowerCase().includes(searchQuery);
+        return matchId || matchReceiver || matchBook;
+    });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px;">Không có lệnh cấp phát sách nào phù hợp.</td></tr>`;
         return;
     }
 
-    const sorted = [...db.distributions].sort((a, b) => new Date(b.receiveDate) - new Date(a.receiveDate));
+    const sorted = [...filtered].sort((a, b) => new Date(b.receiveDate) - new Date(a.receiveDate));
 
     tbody.innerHTML = sorted.map(d => `
         <tr>
@@ -1646,6 +1667,18 @@ function setupSearchAndFilters() {
     document.getElementById('filter-status').addEventListener('change', renderBooks);
     if (document.getElementById('filter-source')) {
         document.getElementById('filter-source').addEventListener('change', renderBooks);
+    }
+
+    // Checkouts
+    const checkoutsSearch = document.getElementById('checkouts-search-query');
+    if (checkoutsSearch) {
+        checkoutsSearch.addEventListener('input', renderCheckouts);
+    }
+
+    // Distributions
+    const distSearch = document.getElementById('distributions-search-query');
+    if (distSearch) {
+        distSearch.addEventListener('input', renderDistributions);
     }
 }
 
