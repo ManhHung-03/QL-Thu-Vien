@@ -218,6 +218,7 @@
                     <div class="books-grid" id="books-list-container">
                         <!-- Injected by Javascript -->
                     </div>
+                    <div class="pagination-container" id="books-pagination"></div>
                 </div>
 
 
@@ -340,6 +341,7 @@
                             </tbody>
                         </table>
                     </div>
+                    <div class="pagination-container" id="checkouts-pagination"></div>
                 </div>
 
                 <!-- DISTRIBUTIONS PAGE -->
@@ -432,6 +434,7 @@
                             </tbody>
                         </table>
                     </div>
+                    <div class="pagination-container" id="distributions-pagination"></div>
                 </div>
 
 
@@ -750,17 +753,20 @@
                     <input type="hidden" id="edit-checkout-id">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label class="form-label" for="edit-checkout-reader-name">Họ và tên độc giả <span style="color:var(--danger)">*</span></label>
+                            <label class="form-label" for="edit-checkout-reader-name">Họ và tên độc giả <span
+                                    style="color:var(--danger)">*</span></label>
                             <input type="text" class="form-input" id="edit-checkout-reader-name" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="edit-checkout-reader-department">Phòng ban <span style="color:var(--danger)">*</span></label>
+                            <label class="form-label" for="edit-checkout-reader-department">Phòng ban <span
+                                    style="color:var(--danger)">*</span></label>
                             <select class="form-select" id="edit-checkout-reader-department" required>
                                 <option value="">-- Chọn phòng ban --</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="edit-checkout-book-id">Chọn sách mượn <span style="color:var(--danger)">*</span></label>
+                            <label class="form-label" for="edit-checkout-book-id">Chọn sách mượn <span
+                                    style="color:var(--danger)">*</span></label>
                             <select class="form-select" id="edit-checkout-book-id" required>
                                 <option value="">-- Chọn sách --</option>
                             </select>
@@ -770,7 +776,8 @@
                             <input type="date" class="form-input" id="edit-checkout-date" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="edit-checkout-quantity">Số lượng mượn <span style="color:var(--danger)">*</span></label>
+                            <label class="form-label" for="edit-checkout-quantity">Số lượng mượn <span
+                                    style="color:var(--danger)">*</span></label>
                             <input type="number" class="form-input" id="edit-checkout-quantity" min="1" required>
                         </div>
                         <div class="form-group full-width">
@@ -801,23 +808,27 @@
                     <input type="hidden" id="edit-dist-id">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label class="form-label" for="edit-dist-receiver-name">Tên người nhận <span style="color:var(--danger)">*</span></label>
+                            <label class="form-label" for="edit-dist-receiver-name">Tên người nhận <span
+                                    style="color:var(--danger)">*</span></label>
                             <input type="text" class="form-input" id="edit-dist-receiver-name" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="edit-dist-receiver-department">Phòng ban <span style="color:var(--danger)">*</span></label>
+                            <label class="form-label" for="edit-dist-receiver-department">Phòng ban <span
+                                    style="color:var(--danger)">*</span></label>
                             <select class="form-select" id="edit-dist-receiver-department" required>
                                 <option value="">-- Chọn phòng ban --</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="edit-dist-book-id">Chọn sách <span style="color:var(--danger)">*</span></label>
+                            <label class="form-label" for="edit-dist-book-id">Chọn sách <span
+                                    style="color:var(--danger)">*</span></label>
                             <select class="form-select" id="edit-dist-book-id" required>
                                 <option value="">-- Chọn sách --</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="edit-dist-quantity">Số lượng cấp <span style="color:var(--danger)">*</span></label>
+                            <label class="form-label" for="edit-dist-quantity">Số lượng cấp <span
+                                    style="color:var(--danger)">*</span></label>
                             <input type="number" class="form-input" id="edit-dist-quantity" min="1" required>
                         </div>
                         <div class="form-group">
@@ -852,7 +863,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 
     <!-- Application Business Logic -->
-    <script src="/app.js"></script>
+    <script src="app.js"></script>
 </body>
 
 </html>

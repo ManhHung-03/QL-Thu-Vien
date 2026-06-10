@@ -272,6 +272,68 @@ let currentUser = {
 };
 let currentTab = 'dashboard';
 
+// Pagination state variables
+let booksPage = 1;
+const booksPerPage = 8;
+
+let checkoutsPage = 1;
+const checkoutsPerPage = 10;
+
+let distributionsPage = 1;
+const distributionsPerPage = 10;
+
+window.changeBooksPage = function(page) {
+    booksPage = page;
+    renderBooks();
+};
+
+window.changeCheckoutsPage = function(page) {
+    checkoutsPage = page;
+    renderCheckouts();
+};
+
+window.changeDistributionsPage = function(page) {
+    distributionsPage = page;
+    renderDistributions();
+};
+
+function renderPaginationControls(containerId, currentPage, totalItems, itemsPerPage, onPageChange) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let html = `
+        <button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="${onPageChange}(${currentPage - 1})">
+            &laquo; Trước
+        </button>
+    `;
+
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+            html += `
+                <button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="${onPageChange}(${i})">
+                    ${i}
+                </button>
+            `;
+        } else if (i === currentPage - 2 || i === currentPage + 2) {
+            html += `<span class="pagination-info">...</span>`;
+        }
+    }
+
+    html += `
+        <button class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="${onPageChange}(${currentPage + 1})">
+            Sau &raquo;
+        </button>
+    `;
+
+    container.innerHTML = html;
+}
+
 // Setup routing tab handlers
 function setupTabNavigation() {
     const navItems = document.querySelectorAll('.nav-item');
@@ -559,20 +621,25 @@ function renderBooks() {
         return matchSearch && matchGenre && matchStatus && matchSource;
     });
 
-    filtered.sort((a, b) => new Date(a.importDate || 0) - new Date(b.importDate || 0));
+    filtered.sort((a, b) => new Date(b.importDate || 0) - new Date(a.importDate || 0));
 
-    if (filtered.length === 0) {
+    const totalItems = filtered.length;
+    const startIndex = (booksPage - 1) * booksPerPage;
+    const paginatedBooks = filtered.slice(startIndex, startIndex + booksPerPage);
+
+    if (totalItems === 0) {
         container.innerHTML = `
             <div style="grid-column: 1/-1; text-align:center; padding: 40px; color: var(--text-muted);">
                 <i data-lucide="book-x" style="width:48px; height:48px; margin-bottom:12px;"></i>
                 <p>Không tìm thấy cuốn sách nào khớp với điều kiện.</p>
             </div>
         `;
+        document.getElementById('books-pagination').innerHTML = '';
         lucide.createIcons();
         return;
     }
 
-    container.innerHTML = filtered.map(b => {
+    container.innerHTML = paginatedBooks.map(b => {
         let statusClass = 'status-available';
         let statusLabel = 'Còn sách';
 
@@ -632,6 +699,8 @@ function renderBooks() {
             </div>
         `;
     }).join('');
+    
+    renderPaginationControls('books-pagination', booksPage, totalItems, booksPerPage, 'changeBooksPage');
     lucide.createIcons();
 }
 
@@ -822,7 +891,7 @@ function populateCheckoutFormDropdowns() {
     // Fill book dropdown (Only in stock)
     const booksInStock = db.books.filter(b => b.quantity > 0);
     bookSelect.innerHTML = '<option value="">-- Chọn sách còn trong kho --</option>' +
-        booksInStock.map(b => `<option value="${b.id}">${b.title} [Số lượng: ${b.quantity} cuốn]</option>`).join('');
+        booksInStock.map(b => `<option value="${b.id}">${b.title} [Số lượng: ${b.quantity} cuốn - Ngày nhập: ${formatDateVN(b.importDate) || '--'}]</option>`).join('');
 
     populateDepartmentDropdowns();
 }
@@ -847,8 +916,10 @@ function renderCheckouts() {
     });
 
     // Main checkout table
-    if (filteredCheckouts.length === 0) {
+    const totalItems = filteredCheckouts.length;
+    if (totalItems === 0) {
         tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:24px;">Không có phiếu mượn nào được ghi nhận phù hợp.</td></tr>`;
+        document.getElementById('checkouts-pagination').innerHTML = '';
         return;
     }
 
@@ -859,7 +930,10 @@ function renderCheckouts() {
         return new Date(b.borrowDate) - new Date(a.borrowDate);
     });
 
-    tbody.innerHTML = sorted.map(c => {
+    const startIndex = (checkoutsPage - 1) * checkoutsPerPage;
+    const paginatedCheckouts = sorted.slice(startIndex, startIndex + checkoutsPerPage);
+
+    tbody.innerHTML = paginatedCheckouts.map(c => {
         let badgeClass = 'badge-info';
         if (c.status === 'Đã trả') badgeClass = 'badge-success';
 
@@ -887,7 +961,7 @@ function renderCheckouts() {
         const qtyText = `${c.quantity || 1} (Đã trả ${c.returnedQuantity || 0})`;
 
         return `
-            <tr ondblclick="openEditCheckoutModal('${c.id}')" style="cursor:pointer;" title="Nhấp đúp để sửa phiếu mượn">
+            <tr class="swipe-row" data-id="${c.id}" ondblclick="openEditCheckoutModal('${c.id}')" style="cursor:pointer;" title="Nhấp đúp để sửa phiếu mượn. Vuốt sang trái để xóa.">
                 <td><b>${c.id}</b></td>
                 <td>${c.memberName}${deptSuffix}</td>
                 <td>${c.bookTitle}</td>
@@ -896,9 +970,12 @@ function renderCheckouts() {
                 <td>${daysText}</td>
                 <td><span class="badge ${badgeClass}">${c.status}</span></td>
                 <td>${actionBtnHtml}</td>
+                <td class="delete-action-bg" onclick="event.stopPropagation(); deleteCheckout('${c.id}')"><i data-lucide="trash-2"></i></td>
             </tr>
         `;
     }).join('');
+
+    renderPaginationControls('checkouts-pagination', checkoutsPage, totalItems, checkoutsPerPage, 'changeCheckoutsPage');
     lucide.createIcons();
 }
 
@@ -1114,7 +1191,7 @@ function populateDistributionFormDropdowns() {
 
     const booksInStock = db.books.filter(b => b.quantity > 0);
     bookSelect.innerHTML = '<option value="">-- Chọn sách còn trong kho --</option>' +
-        booksInStock.map(b => `<option value="${b.id}">${b.title} [Số lượng: ${b.quantity} cuốn]</option>`).join('');
+        booksInStock.map(b => `<option value="${b.id}">${b.title} [Số lượng: ${b.quantity} cuốn - Ngày nhập: ${formatDateVN(b.importDate) || '--'}]</option>`).join('');
 
     populateDepartmentDropdowns();
 }
@@ -1133,15 +1210,20 @@ function renderDistributions() {
         return matchId || matchReceiver || matchBook;
     });
 
-    if (filtered.length === 0) {
+    const totalItems = filtered.length;
+    if (totalItems === 0) {
         tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px;">Không có lệnh cấp phát sách nào phù hợp.</td></tr>`;
+        document.getElementById('distributions-pagination').innerHTML = '';
         return;
     }
 
     const sorted = [...filtered].sort((a, b) => new Date(b.receiveDate) - new Date(a.receiveDate));
 
-    tbody.innerHTML = sorted.map(d => `
-        <tr ondblclick="openEditDistributionModal('${d.id}')" style="cursor:pointer;" title="Nhấp đúp để sửa lệnh cấp sách">
+    const startIndex = (distributionsPage - 1) * distributionsPerPage;
+    const paginatedDist = sorted.slice(startIndex, startIndex + distributionsPerPage);
+
+    tbody.innerHTML = paginatedDist.map(d => `
+        <tr class="swipe-row" data-id="${d.id}" ondblclick="openEditDistributionModal('${d.id}')" style="cursor:pointer;" title="Nhấp đúp để sửa lệnh cấp sách. Vuốt sang trái để xóa.">
             <td><b>${d.id}</b></td>
             <td>${d.bookTitle}</td>
             <td>${d.quantity}</td>
@@ -1149,8 +1231,14 @@ function renderDistributions() {
             <td>${d.receiverDepartment}</td>
             <td>${formatDateVN(d.receiveDate)}</td>
             <td>${d.notes || ''}</td>
+            <td class="delete-action-bg" onclick="event.stopPropagation(); deleteDistribution('${d.id}')"><i data-lucide="trash-2"></i></td>
         </tr>
     `).join('');
+
+    renderPaginationControls('distributions-pagination', distributionsPage, totalItems, distributionsPerPage, 'changeDistributionsPage');
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
 }
 
 function setupDistributionSubmitHandler() {
@@ -1659,23 +1747,41 @@ function closeModal(id) {
 // Search and filter triggers
 function setupSearchAndFilters() {
     // Books
-    document.getElementById('books-search-query').addEventListener('input', renderBooks);
-    document.getElementById('filter-genre').addEventListener('change', renderBooks);
-    document.getElementById('filter-status').addEventListener('change', renderBooks);
+    document.getElementById('books-search-query').addEventListener('input', () => {
+        booksPage = 1;
+        renderBooks();
+    });
+    document.getElementById('filter-genre').addEventListener('change', () => {
+        booksPage = 1;
+        renderBooks();
+    });
+    document.getElementById('filter-status').addEventListener('change', () => {
+        booksPage = 1;
+        renderBooks();
+    });
     if (document.getElementById('filter-source')) {
-        document.getElementById('filter-source').addEventListener('change', renderBooks);
+        document.getElementById('filter-source').addEventListener('change', () => {
+            booksPage = 1;
+            renderBooks();
+        });
     }
 
     // Checkouts
     const checkoutsSearch = document.getElementById('checkouts-search-query');
     if (checkoutsSearch) {
-        checkoutsSearch.addEventListener('input', renderCheckouts);
+        checkoutsSearch.addEventListener('input', () => {
+            checkoutsPage = 1;
+            renderCheckouts();
+        });
     }
 
     // Distributions
     const distSearch = document.getElementById('distributions-search-query');
     if (distSearch) {
-        distSearch.addEventListener('input', renderDistributions);
+        distSearch.addEventListener('input', () => {
+            distributionsPage = 1;
+            renderDistributions();
+        });
     }
 }
 
@@ -1936,8 +2042,11 @@ function setupExcelExports() {
                 showToast('Không có dữ liệu sách đang cho mượn để xuất!', 'warning');
                 return;
             }
+            // Sort by borrowDate from oldest to newest (ascending)
+            const sortedActive = [...activeLoans].sort((a, b) => new Date(a.borrowDate || 0) - new Date(b.borrowDate || 0));
+            
             const headers = ['STT', 'Tên người mượn', 'Phòng ban', 'Tên sách', 'Số lượng sách mượn', 'Ngày mượn', 'Số ngày đã mượn', 'Ghi chú'];
-            const rows = activeLoans.map((c, index) => {
+            const rows = sortedActive.map((c, index) => {
                 const days = Math.ceil((new Date() - new Date(c.borrowDate)) / (1000 * 60 * 60 * 24));
                 return [
                     index + 1,
@@ -1993,8 +2102,12 @@ function setupExcelExports() {
                 showToast('Không có dữ liệu sách đã trả để xuất!', 'warning');
                 return;
             }
+
+            // Sort by return date from oldest to newest (ascending)
+            const sortedReturned = [...returnEventsFlat].sort((a, b) => new Date(a.event.date || 0) - new Date(b.event.date || 0));
+
             const headers = ['STT', 'Tên người trả', 'Phòng ban', 'Tên sách', 'Số lượng trả', 'Ngày trả', 'Tình trạng khi trả', 'Ghi chú'];
-            const rows = returnEventsFlat.map((item, index) => {
+            const rows = sortedReturned.map((item, index) => {
                 return [
                     index + 1,
                     item.event.returnerName || item.checkout.memberName,
@@ -2023,7 +2136,8 @@ function setupExcelExports() {
     const exportDistributionsBtn = document.getElementById('btn-export-distributions-excel');
     if (exportDistributionsBtn) {
         exportDistributionsBtn.addEventListener('click', async () => {
-            const sortedDistributions = [...db.distributions].sort((a, b) => new Date(b.receiveDate) - new Date(a.receiveDate));
+            // Sort by receiveDate from oldest to newest (ascending)
+            const sortedDistributions = [...db.distributions].sort((a, b) => new Date(a.receiveDate || 0) - new Date(b.receiveDate || 0));
             if (sortedDistributions.length === 0) {
                 showToast('Không có dữ liệu cấp phát sách để xuất!', 'warning');
                 return;
@@ -2093,6 +2207,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Renders first page
     handleRoleChange('admin'); // default boot as admin
+    setupSwipeToDelete();
 
     // Auto-sync every 15 seconds
     setInterval(async () => {
@@ -2228,12 +2343,33 @@ function openEditCheckoutModal(id) {
 
     const bookSelect = document.getElementById('edit-checkout-book-id');
     const allBooks = db.books;
-    bookSelect.innerHTML = '<option value="">-- Chọn sách --</option>' + allBooks.map(b => `<option value="${b.id}">${b.title}</option>`).join('');
+    bookSelect.innerHTML = '<option value="">-- Chọn sách --</option>' + allBooks.map(b => `<option value="${b.id}">${b.title} [Số lượng: ${b.quantity} cuốn - Ngày nhập: ${formatDateVN(b.importDate) || '--'}]</option>`).join('');
     bookSelect.value = c.bookId;
 
-    document.getElementById('edit-checkout-date').value = c.borrowDate;
-    document.getElementById('edit-checkout-quantity').value = c.quantity;
+    const dateInput = document.getElementById('edit-checkout-date');
+    dateInput.value = c.borrowDate;
+
+    const qtyInput = document.getElementById('edit-checkout-quantity');
+    qtyInput.value = c.quantity;
+
     document.getElementById('edit-checkout-notes').value = c.notes || '';
+
+    // Set enabled/disabled state and min values depending on checkout status
+    if (c.status === 'Đã trả') {
+        qtyInput.disabled = true;
+        bookSelect.disabled = true;
+        dateInput.disabled = true;
+    } else if (c.returnedQuantity > 0) {
+        bookSelect.disabled = true;
+        qtyInput.disabled = false;
+        qtyInput.min = c.returnedQuantity;
+        dateInput.disabled = false;
+    } else {
+        qtyInput.disabled = false;
+        bookSelect.disabled = false;
+        qtyInput.min = 1;
+        dateInput.disabled = false;
+    }
 
     openModal('modal-edit-checkout');
 }
@@ -2247,23 +2383,101 @@ function setupEditCheckoutFormHandler() {
         const c = db.checkouts.find(x => x.id === id);
         if (!c) return;
         
-        c.memberName = document.getElementById('edit-checkout-reader-name').value.trim();
-        c.memberDepartment = document.getElementById('edit-checkout-reader-department').value;
-        const bookId = document.getElementById('edit-checkout-book-id').value;
-        const book = db.books.find(b => b.id === bookId);
-        if (book) {
-            c.bookId = bookId;
-            c.bookTitle = book.title;
+        const newBookId = document.getElementById('edit-checkout-book-id').value;
+        const newQty = parseInt(document.getElementById('edit-checkout-quantity').value) || 1;
+        const newMemberName = document.getElementById('edit-checkout-reader-name').value.trim();
+        const newMemberDepartment = document.getElementById('edit-checkout-reader-department').value;
+
+        const oldBookId = c.bookId;
+        const oldQty = c.quantity;
+
+        // Validation: check newQty min limit if partially returned
+        if (newQty < c.returnedQuantity) {
+            showToast(`Số lượng mượn mới không thể nhỏ hơn số lượng đã trả (${c.returnedQuantity})!`, 'error');
+            return;
         }
+
+        // If checkout is already fully returned, reject quantity/book modification
+        if (c.status === 'Đã trả' && (newBookId !== oldBookId || newQty !== oldQty)) {
+            showToast('Không thể thay đổi sách hoặc số lượng của phiếu mượn đã trả hoàn tất!', 'error');
+            return;
+        }
+
+        const oldBook = db.books.find(b => b.id === oldBookId);
+        const newBook = db.books.find(b => b.id === newBookId);
+
+        if (!newBook) {
+            showToast('Không tìm thấy thông tin sách mới chọn!', 'error');
+            return;
+        }
+
+        // Check reader borrow limit (excluding the current checkout we are editing)
+        const activeCheckouts = db.checkouts.filter(item => item.id !== c.id && item.memberName.toLowerCase() === newMemberName.toLowerCase() && (item.memberDepartment || '').toLowerCase() === newMemberDepartment.toLowerCase() && item.status !== 'Đã trả');
+        const otherBorrowedCount = activeCheckouts.reduce((sum, item) => sum + (item.quantity - (item.returnedQuantity || 0)), 0);
+        const newBorrowedQuantityThisCheckout = newQty - c.returnedQuantity;
+        if (otherBorrowedCount + newBorrowedQuantityThisCheckout > db.rules.maxBorrow) {
+            showToast(`Không thể cập nhật! Độc giả vượt quá giới hạn mượn tối đa (${db.rules.maxBorrow} cuốn).`, 'error');
+            return;
+        }
+
+        // Check stock & adjust inventory
+        if (oldBookId === newBookId) {
+            const diff = newQty - oldQty;
+            if (diff > 0 && oldBook.quantity < diff) {
+                showToast(`Cập nhật thất bại! Sách chỉ còn ${oldBook.quantity} cuốn trong kho.`, 'error');
+                return;
+            }
+            // Adjust
+            if (oldBook) {
+                oldBook.quantity -= diff;
+                oldBook.borrowedCount = (oldBook.borrowedCount || 0) + diff;
+                oldBook.status = oldBook.quantity > 0 ? 'Còn sách' : 'Hết sách';
+            }
+        } else {
+            // Changing book: only allowed if c.returnedQuantity === 0
+            if (c.returnedQuantity > 0) {
+                showToast('Không thể thay đổi sách của phiếu mượn đã trả một phần!', 'error');
+                return;
+            }
+            if (newBook.quantity < newQty) {
+                showToast(`Cập nhật thất bại! Sách mới chọn chỉ còn ${newBook.quantity} cuốn trong kho.`, 'error');
+                return;
+            }
+            // Restore old book stock
+            if (oldBook) {
+                oldBook.quantity += oldQty;
+                oldBook.borrowedCount = Math.max(0, (oldBook.borrowedCount || 0) - oldQty);
+                oldBook.status = oldBook.quantity > 0 ? 'Còn sách' : 'Hết sách';
+            }
+            // Deduct new book stock
+            newBook.quantity -= newQty;
+            newBook.borrowedCount = (newBook.borrowedCount || 0) + newQty;
+            newBook.status = newBook.quantity > 0 ? 'Còn sách' : 'Hết sách';
+        }
+
+        // Update checkout record fields
+        c.memberName = newMemberName;
+        c.memberDepartment = newMemberDepartment;
+        c.bookId = newBookId;
+        c.bookTitle = newBook.title;
         c.borrowDate = document.getElementById('edit-checkout-date').value;
-        c.quantity = parseInt(document.getElementById('edit-checkout-quantity').value) || 1;
+        c.quantity = newQty;
         c.notes = document.getElementById('edit-checkout-notes').value.trim();
+
+        // Re-check status of checkout
+        if (c.returnedQuantity >= c.quantity) {
+            c.status = 'Đã trả';
+            c.returnDate = c.returnDate || new Date().toISOString().split('T')[0];
+        } else {
+            c.status = 'Đang mượn';
+            c.returnDate = null;
+        }
 
         saveAllDB();
         renderCheckouts();
         showToast('Cập nhật phiếu mượn thành công!', 'success');
         addAuditLog(currentUser.name, `Đã sửa phiếu mượn: ${id}`, 'success');
-        closeModal(document.getElementById('modal-edit-checkout'));
+        closeModal('modal-edit-checkout');
     });
 }
 
@@ -2280,7 +2494,7 @@ function openEditDistributionModal(id) {
 
     const bookSelect = document.getElementById('edit-dist-book-id');
     const allBooks = db.books;
-    bookSelect.innerHTML = '<option value="">-- Chọn sách --</option>' + allBooks.map(b => `<option value="${b.id}">${b.title}</option>`).join('');
+    bookSelect.innerHTML = '<option value="">-- Chọn sách --</option>' + allBooks.map(b => `<option value="${b.id}">${b.title} [Số lượng: ${b.quantity} cuốn - Ngày nhập: ${formatDateVN(b.importDate) || '--'}]</option>`).join('');
     bookSelect.value = d.bookId;
 
     document.getElementById('edit-dist-quantity').value = d.quantity;
@@ -2299,15 +2513,56 @@ function setupEditDistributionFormHandler() {
         const d = db.distributions.find(x => x.id === id);
         if (!d) return;
         
-        d.receiverName = document.getElementById('edit-dist-receiver-name').value.trim();
-        d.receiverDepartment = document.getElementById('edit-dist-receiver-department').value;
-        const bookId = document.getElementById('edit-dist-book-id').value;
-        const book = db.books.find(b => b.id === bookId);
-        if (book) {
-            d.bookId = bookId;
-            d.bookTitle = book.title;
+        const newBookId = document.getElementById('edit-dist-book-id').value;
+        const newQty = parseInt(document.getElementById('edit-dist-quantity').value) || 1;
+        const newReceiverName = document.getElementById('edit-dist-receiver-name').value.trim();
+        const newReceiverDepartment = document.getElementById('edit-dist-receiver-department').value;
+
+        const oldBookId = d.bookId;
+        const oldQty = d.quantity;
+
+        const oldBook = db.books.find(b => b.id === oldBookId);
+        const newBook = db.books.find(b => b.id === newBookId);
+
+        if (!newBook) {
+            showToast('Không tìm thấy thông tin sách mới chọn!', 'error');
+            return;
         }
-        d.quantity = parseInt(document.getElementById('edit-dist-quantity').value) || 1;
+
+        // Check stock & adjust inventory
+        if (oldBookId === newBookId) {
+            const diff = newQty - oldQty;
+            if (diff > 0 && oldBook.quantity < diff) {
+                showToast(`Cập nhật thất bại! Sách chỉ còn ${oldBook.quantity} cuốn trong kho.`, 'error');
+                return;
+            }
+            // Adjust
+            if (oldBook) {
+                oldBook.quantity -= diff;
+                oldBook.status = oldBook.quantity > 0 ? 'Còn sách' : 'Hết sách';
+            }
+        } else {
+            // Changing book
+            if (newBook.quantity < newQty) {
+                showToast(`Cập nhật thất bại! Sách mới chọn chỉ còn ${newBook.quantity} cuốn trong kho.`, 'error');
+                return;
+            }
+            // Restore old book stock
+            if (oldBook) {
+                oldBook.quantity += oldQty;
+                oldBook.status = oldBook.quantity > 0 ? 'Còn sách' : 'Hết sách';
+            }
+            // Deduct new book stock
+            newBook.quantity -= newQty;
+            newBook.status = newBook.quantity > 0 ? 'Còn sách' : 'Hết sách';
+        }
+
+        // Update distribution record fields
+        d.receiverName = newReceiverName;
+        d.receiverDepartment = newReceiverDepartment;
+        d.bookId = newBookId;
+        d.bookTitle = newBook.title;
+        d.quantity = newQty;
         d.receiveDate = document.getElementById('edit-dist-date').value;
         d.notes = document.getElementById('edit-dist-notes').value.trim();
 
@@ -2315,7 +2570,144 @@ function setupEditDistributionFormHandler() {
         renderDistributions();
         showToast('Cập nhật lệnh cấp phát thành công!', 'success');
         addAuditLog(currentUser.name, `Đã sửa lệnh cấp phát: ${id}`, 'success');
-        closeModal(document.getElementById('modal-edit-distribution'));
+        closeModal('modal-edit-distribution');
     });
+}
+
+// ==========================================
+// 17. SWIPE TO DELETE LOGIC
+// ==========================================
+function setupSwipeToDelete() {
+    const tableBodies = [
+        document.getElementById('checkouts-table-body'),
+        document.getElementById('distributions-table-body')
+    ];
+
+    tableBodies.forEach(tbody => {
+        if (!tbody) return;
+
+        // Use event delegation for all drag/swipe touch and mouse events
+        tbody.addEventListener('mousedown', handleSwipeStart);
+        tbody.addEventListener('touchstart', handleSwipeStart, { passive: true });
+    });
+
+    let startX = 0;
+    let currentActiveRow = null;
+    let isSwiping = false;
+
+    function handleSwipeStart(e) {
+        const row = e.target.closest('tr.swipe-row');
+        if (!row) return;
+
+        // Ignore clicks on delete button
+        if (e.target.closest('.delete-action-bg')) return;
+
+        currentActiveRow = row;
+        startX = e.touches ? e.touches[0].clientX : e.clientX;
+        isSwiping = true;
+
+        document.addEventListener('mousemove', handleSwipeMove);
+        document.addEventListener('touchmove', handleSwipeMove, { passive: false });
+        document.addEventListener('mouseup', handleSwipeEnd);
+        document.addEventListener('touchend', handleSwipeEnd);
+    }
+
+    function handleSwipeMove(e) {
+        if (!isSwiping || !currentActiveRow) return;
+
+        const currentX = e.touches ? e.touches[0].clientX : e.clientX;
+        const diffX = currentX - startX;
+
+        // Swipe left to show delete button
+        if (diffX < -50) {
+            // Close all other swiped rows
+            document.querySelectorAll('tr.swipe-row.swiped').forEach(r => {
+                if (r !== currentActiveRow) r.classList.remove('swiped');
+            });
+            currentActiveRow.classList.add('swiped');
+            isSwiping = false; // lock
+            removeDragListeners();
+        } 
+        // Swipe right to hide delete button
+        else if (diffX > 50) {
+            currentActiveRow.classList.remove('swiped');
+            isSwiping = false; // lock
+            removeDragListeners();
+        }
+    }
+
+    function handleSwipeEnd() {
+        isSwiping = false;
+        removeDragListeners();
+    }
+
+    function removeDragListeners() {
+        document.removeEventListener('mousemove', handleSwipeMove);
+        document.removeEventListener('touchmove', handleSwipeMove);
+        document.removeEventListener('mouseup', handleSwipeEnd);
+        document.removeEventListener('touchend', handleSwipeEnd);
+    }
+}
+
+// Click outside to close any swiped row
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('tr.swipe-row')) {
+        document.querySelectorAll('tr.swipe-row.swiped').forEach(tr => {
+            tr.classList.remove('swiped');
+        });
+    }
+});
+
+// Delete handlers
+function deleteCheckout(id) {
+    const c = db.checkouts.find(x => x.id === id);
+    if (!c) return;
+
+    if (!confirm(`Bạn có chắc chắn muốn xóa phiếu mượn ${id} của độc giả "${c.memberName}"?`)) {
+        const row = document.querySelector(`tr[data-id="${id}"]`);
+        if (row) row.classList.remove('swiped');
+        return;
+    }
+
+    // Restore stock for unreturned books
+    const outstandingQty = c.quantity - (c.returnedQuantity || 0);
+    const book = db.books.find(b => b.id === c.bookId);
+    if (book) {
+        book.quantity += outstandingQty;
+        book.borrowedCount = Math.max(0, (book.borrowedCount || 0) - c.quantity);
+        book.status = book.quantity > 0 ? 'Còn sách' : 'Hết sách';
+    }
+
+    db.checkouts = db.checkouts.filter(x => x.id !== id);
+    saveAllDB();
+    renderCheckouts();
+    populateCheckoutFormDropdowns();
+    showToast(`Đã xóa phiếu mượn ${id} thành công!`, 'success');
+    addAuditLog(currentUser.name, `Đã xóa phiếu mượn: ${id} (Đã khôi phục ${outstandingQty} cuốn "${c.bookTitle}" về kho)`, 'warning');
+}
+
+function deleteDistribution(id) {
+    const d = db.distributions.find(x => x.id === id);
+    if (!d) return;
+
+    if (!confirm(`Bạn có chắc chắn muốn hủy lệnh cấp phát ${id} của "${d.receiverName}"?`)) {
+        const row = document.querySelector(`tr[data-id="${id}"]`);
+        if (row) row.classList.remove('swiped');
+        return;
+    }
+
+    // Restore stock
+    const book = db.books.find(b => b.id === d.bookId);
+    if (book) {
+        book.quantity += d.quantity;
+        book.status = book.quantity > 0 ? 'Còn sách' : 'Hết sách';
+    }
+
+    db.distributions = db.distributions.filter(x => x.id !== id);
+    saveAllDB();
+    renderDistributions();
+    populateDistributionFormDropdowns();
+    showToast(`Đã hủy lệnh cấp phát ${id} thành công!`, 'success');
+    addAuditLog(currentUser.name, `Đã hủy lệnh cấp phát: ${id} (Đã khôi phục ${d.quantity} cuốn "${d.bookTitle}" về kho)`, 'warning');
 }
 
